@@ -157,13 +157,21 @@ for e in range(cfg.epochs):
             loss.backward()
             optimizer.step()
 
+            if cfg.logging:
+                wb.log({
+                    'train_loss': loss.item(),
+                    'train_step': train_step,
+                    #'train_toa_diff': toa_diff,
+                    #'train_points': pts_train_num,
+                })
+
             if cfg.logging and batch_idx%800 == 1:
                 # channel plot
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
                 # image frame plot
-                fig, axs = plt.subplots(1, 2)
+                fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                 axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                 axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                 wb_img_upload(fig, log_key='train_frames')
@@ -220,13 +228,21 @@ for e in range(cfg.epochs):
                 masks_true = unravel_batch_dim(masks_true)
                 es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size)
 
+                if cfg.logging:
+                    wb.log({
+                        'val_loss': loss.item(),
+                        'val_step': val_step,
+                        #'val_toa_diff': toa_diff,
+                        #'val_points': pts_train_num,
+                    })
+
                 if cfg.logging and batch_idx%800 == 1:
                     # channel plot
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
                     # image frame plot
-                    fig, axs = plt.subplots(1, 2)
+                    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                     axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                     axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                     wb_img_upload(fig, log_key='val_frames')
