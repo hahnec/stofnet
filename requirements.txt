@@ -5,3 +5,5 @@ matplotlib
 wandb
 omegaconf
 urllib3<2.0
+natsort
+scipy
