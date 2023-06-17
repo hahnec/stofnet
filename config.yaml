@@ -1,7 +1,7 @@
 # model
 seed: 3008
 logging: False
-device: "cpu"
+device: "cuda"
 batch_size: 2
 lr: 0.001
 epochs: 50
@@ -13,6 +13,7 @@ sigma: 1
 evaluate: False
 model_file: Null
 hilbert_opt: True
+oscil_opt: False
 
 # dataset
 sequences: [1]

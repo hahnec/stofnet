@@ -9,12 +9,16 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor, hilbert_opt=False):
+    def __init__(self, upsample_factor, hilbert_opt=True, oscil_opt=False):
         super(StofNet, self).__init__()
 
         if hilbert_opt:
-            self.add_hilbert = lambda x: torch.cat([abs(hilbert_transform(x)), x], dim=1)
-            self.conv1 = nn.Conv1d(2, 64, 9, 1, 4)
+            if oscil_opt:
+                self.add_hilbert = lambda x: torch.cat([abs(hilbert_transform(x)), x], dim=1)
+                self.conv1 = nn.Conv1d(2, 64, 9, 1, 4)
+            else:
+                self.add_hilbert = lambda x: abs(hilbert_transform(x))
+                self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)
         else:
             self.add_hilbert = None
             self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)

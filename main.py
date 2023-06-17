@@ -94,7 +94,7 @@ if cfg.logging:
     wandb.define_metric('lr', step_metric='epoch')
 
 # load model
-model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt)
+model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, oscil_opt=cfg.oscil_opt)
 model = model.to(cfg.device)
 model.eval()
 
@@ -150,7 +150,7 @@ for e in range(cfg.epochs):
             gt_samples = unravel_batch_dim(gt_samples)
             masks_pred = unravel_batch_dim(masks_pred)
             masks_true = unravel_batch_dim(masks_true)
-            es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size)
+            es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
 
             # back-propagate
             optimizer.zero_grad()
