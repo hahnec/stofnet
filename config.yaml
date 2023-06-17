@@ -1,0 +1,33 @@
+# model
+seed: 3008
+logging: False
+device: "cpu"
+batch_size: 2
+lr: 0.001
+epochs: 50
+weight_decay: 1e-8
+upsample_factor: 4
+lambda_value: 1
+kernel_size: 7
+sigma: 1
+evaluate: False
+model_file: Null
+hilbert_opt: True
+
+# dataset
+sequences: [1]
+rf_scale_factor: 10
+ch_gap: 8
+clutter_db: Null
+temporal_filter: False
+pow_law_opt: False
+angle_threshold: 45
+
+# paths
+data_path: PALA_data_InSilicoFlow/
+ubx_dir: /storage/homefs/ch21z139/PALA_dataset/${data_path}
+loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
+map_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/${data_path}
+ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
+map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
+data_dir: ${loc_dir}

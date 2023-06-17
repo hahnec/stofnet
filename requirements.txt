@@ -1,0 +1,7 @@
+numpy==1.22.4
+torch
+tqdm
+matplotlib
+wandb
+omegaconf
+urllib3<2.0
