@@ -174,6 +174,7 @@ for e in range(cfg.epochs):
                 fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                 axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                 axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                plt.tight_layout()
                 wb_img_upload(fig, log_key='train_frames')
                 plt.close('all')
 
@@ -245,6 +246,7 @@ for e in range(cfg.epochs):
                     fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                     axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
                     axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                    plt.tight_layout()
                     wb_img_upload(fig, log_key='val_frames')
                     plt.close('all')
 
