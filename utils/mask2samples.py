@@ -17,7 +17,7 @@ def get_maxima_positions(scores, window_size):
     return indices
 
 
-def samples2nested_list(scores, window_size):
+def samples2nested_list(scores, window_size, upsample_factor=1):
 
     indices = get_maxima_positions(scores, window_size)
 
@@ -25,8 +25,8 @@ def samples2nested_list(scores, window_size):
     nested_list = []
     for bidx in range(max(indices[:, 0])+1):
         for cidx in range(max(indices[:, 1])+1):
-            samples = indices[(indices[:, 0]==bidx) & (indices[:, 1]==cidx), -1]
-            helper_list.append(samples.cpu().numpy())
+            samples = indices[(indices[:, 0]==bidx) & (indices[:, 1]==cidx), -1] / upsample_factor
+            helper_list.append(samples.round.cpu().numpy())
         nested_list.append(helper_list)
         helper_list = []
 
