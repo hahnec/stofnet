@@ -26,7 +26,7 @@ def samples2nested_list(scores, window_size, upsample_factor=1):
     for bidx in range(max(indices[:, 0])+1):
         for cidx in range(max(indices[:, 1])+1):
             samples = indices[(indices[:, 0]==bidx) & (indices[:, 1]==cidx), -1] / upsample_factor
-            helper_list.append(samples.round.cpu().numpy())
+            helper_list.append(samples.cpu().numpy())
         nested_list.append(helper_list)
         helper_list = []
 
