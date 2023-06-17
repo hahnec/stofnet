@@ -7,3 +7,5 @@ omegaconf
 urllib3<2.0
 natsort
 scipy
+scikit-image
+
