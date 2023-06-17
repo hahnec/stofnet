@@ -14,7 +14,8 @@ from pathlib import Path
 import wandb
 import matplotlib.pyplot as plt
 import sys
-sys.path.append(str(Path(__file__).parent / "stof_net"))
+sys.path.append(str(Path(__file__).parent / "stofnet"))
+sys.path.append(str(Path(__file__).parent))
 
 from model import StofNet
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
