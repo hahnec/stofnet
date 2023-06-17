@@ -94,7 +94,7 @@ if cfg.logging:
     wandb.define_metric('lr', step_metric='epoch')
 
 # load model
-model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt)
+model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, oscil_opt=cfg.oscil_opt)
 model = model.to(cfg.device)
 model.eval()
 
