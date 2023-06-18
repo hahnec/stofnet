@@ -9,20 +9,13 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor, hilbert_opt=True, oscil_opt=False):
+    def __init__(self, upsample_factor, hilbert_opt=True, concat_oscil=False):
         super(StofNet, self).__init__()
 
-        if hilbert_opt:
-            if oscil_opt:
-                self.hilbert = HilbertTransform(concat_oscil=True)
-                self.conv1 = nn.Conv1d(2, 64, 9, 1, 4)
-            else:
-                self.hilbert = HilbertTransform()
-                self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)
-        else:
-            self.hilbert = None
-            self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)
+        self.hilbert = HilbertTransform(concat_oscil=concat_oscil) if hilbert_opt else None
+        in_channels = 2 if hilbert_opt and concat_oscil else 1
 
+        self.conv1 = nn.Conv1d(in_channels, 64, 9, 1, 4)
         self.conv2 = nn.Conv1d(64, 64, 3, 1, 1)
         self.conv3 = nn.Conv1d(64, 64, 3, 1, 1)
         self.conv4 = nn.Conv1d(64, 64, 3, 1, 1)
@@ -42,6 +35,7 @@ class StofNet(nn.Module):
     def forward(self, x):
 
         x = self.hilbert(x) if self.hilbert is not None else x
+
         x = F.relu(self.conv1(x))
         res1=x
         x = F.relu(self.conv2(x))
