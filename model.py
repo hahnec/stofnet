@@ -12,17 +12,8 @@ class StofNet(nn.Module):
     def __init__(self, upsample_factor, hilbert_opt=True, concat_oscil=False):
         super(StofNet, self).__init__()
 
-<<<<<<< HEAD
         self.hilbert = HilbertTransform(concat_oscil=concat_oscil) if hilbert_opt else None
         in_channels = 2 if hilbert_opt and concat_oscil else 1
-=======
-        in_channels = 1
-        if hilbert_opt:
-            self.hilbert = HilbertTransform(concat_oscil=concat_oscil)
-            if concat_oscil: in_channels = 2
-        else:
-            self.hilbert = None
->>>>>>> 9ac331f5d890f83409175796cfe7c241fe1a9b6d
 
         self.conv1 = nn.Conv1d(in_channels, 64, 9, 1, 4)
         self.conv2 = nn.Conv1d(64, 64, 3, 1, 1)
