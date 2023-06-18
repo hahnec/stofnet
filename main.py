@@ -166,7 +166,7 @@ for e in range(cfg.epochs):
                     #'train_points': pts_train_num,
                 })
 
-            if cfg.logging and batch_idx%200 == 50:
+            if cfg.logging and batch_idx%200 == 10:
                 # channel plot
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
@@ -235,7 +235,7 @@ for e in range(cfg.epochs):
                         #'val_points': pts_train_num,
                     })
 
-                if cfg.logging and batch_idx%200 == 50:
+                if cfg.logging and batch_idx%200 == 10:
                     # channel plot
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
