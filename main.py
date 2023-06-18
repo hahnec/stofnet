@@ -13,6 +13,7 @@ from omegaconf import OmegaConf
 from pathlib import Path
 import wandb
 import matplotlib.pyplot as plt
+import time
 import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
@@ -136,7 +137,9 @@ for e in range(cfg.epochs):
             gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
             # inference
+            tic = time.process_time()
             masks_pred = model(frame)
+            #print(time.process_time()-tic)
 
             # train loss
             masks_true = samples2mask(gt_true, masks_pred) * 1
@@ -151,7 +154,6 @@ for e in range(cfg.epochs):
             gt_samples = unravel_batch_dim(gt_samples)
             masks_pred = unravel_batch_dim(masks_pred)
             masks_true = unravel_batch_dim(masks_true)
-            es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
 
             # back-propagate
             optimizer.zero_grad()
@@ -166,8 +168,9 @@ for e in range(cfg.epochs):
                     #'train_points': pts_train_num,
                 })
 
-            if cfg.logging and batch_idx%200 == 10:
+            if cfg.logging and batch_idx%800 == 50:
                 # channel plot
+                es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
@@ -225,7 +228,6 @@ for e in range(cfg.epochs):
                 gt_samples = unravel_batch_dim(gt_samples)
                 masks_pred = unravel_batch_dim(masks_pred)
                 masks_true = unravel_batch_dim(masks_true)
-                es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size)
 
                 if cfg.logging:
                     wb.log({
@@ -235,8 +237,9 @@ for e in range(cfg.epochs):
                         #'val_points': pts_train_num,
                     })
 
-                if cfg.logging and batch_idx%200 == 10:
+                if cfg.logging and batch_idx%800 == 50:
                     # channel plot
+                    es_samples = samples2nested_list(masks_pred, window_size=cfg.kernel_size)
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
