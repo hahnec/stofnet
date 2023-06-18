@@ -35,11 +35,7 @@ class StofNet(nn.Module):
     def forward(self, x):
 
         x = self.hilbert(x) if self.hilbert is not None else x
-<<<<<<< HEAD
 
-=======
-        
->>>>>>> 9ac331f5d890f83409175796cfe7c241fe1a9b6d
         x = F.relu(self.conv1(x))
         res1=x
         x = F.relu(self.conv2(x))
