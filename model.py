@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 
-from utils.hilbert import hilbert_transform
+from utils.hilbert import hilbert_transform, HilbertTransform
 from utils.sample_shuffle import SampleShuffle1D
 
 
@@ -14,13 +14,13 @@ class StofNet(nn.Module):
 
         if hilbert_opt:
             if oscil_opt:
-                self.add_hilbert = lambda x: torch.cat([abs(hilbert_transform(x)), x], dim=1)
+                self.hilbert = HilbertTransform(concat_oscil=True)
                 self.conv1 = nn.Conv1d(2, 64, 9, 1, 4)
             else:
-                self.add_hilbert = lambda x: abs(hilbert_transform(x))
+                self.hilbert = HilbertTransform()
                 self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)
         else:
-            self.add_hilbert = None
+            self.hilbert = None
             self.conv1 = nn.Conv1d(1, 64, 9, 1, 4)
 
         self.conv2 = nn.Conv1d(64, 64, 3, 1, 1)
@@ -41,7 +41,7 @@ class StofNet(nn.Module):
         
     def forward(self, x):
 
-        x = self.add_hilbert(x) if self.add_hilbert is not None else x
+        x = self.hilbert(x) if self.hilbert is not None else x
         x = F.relu(self.conv1(x))
         res1=x
         x = F.relu(self.conv2(x))

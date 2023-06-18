@@ -22,8 +22,13 @@ def hilbert_transform(y):
 
 
 class HilbertTransform(nn.Module):
-    def __init__(self, upsample_factor):
+    def __init__(self, concat_oscil = False):
         super(HilbertTransform, self).__init__()
 
+        self.concat_oscil = concat_oscil
+
     def forward(self, x):
-        return hilbert_transform(x)
+        if self.concat_oscil:
+            return torch.cat([abs(hilbert_transform(x)), x], dim=1)
+        else:
+            return abs(hilbert_transform(x))
