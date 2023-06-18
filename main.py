@@ -137,12 +137,10 @@ for e in range(cfg.epochs):
             gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
             # inference
-            tic = time.process_time()
             masks_pred = model(frame)
-            #print(time.process_time()-tic)
 
             # train loss
-            masks_true = samples2mask(gt_true, masks_pred) * 1
+            masks_true = samples2mask(gt_true, masks_pred) * 50
             masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
             masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
             loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
@@ -216,7 +214,7 @@ for e in range(cfg.epochs):
                 masks_pred = model(frame)
 
                 # validation loss
-                masks_true = samples2mask(gt_true, masks_pred) * 1
+                masks_true = samples2mask(gt_true, masks_pred) * 50
                 masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
