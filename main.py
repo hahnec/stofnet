@@ -118,6 +118,7 @@ for e in range(cfg.epochs):
     train_loss = 0
     val_loss = 0
     pbar_update = cfg.batch_size
+    model.train()
     with tqdm(total=len(train_set)) as pbar:
         for batch_idx, batch_data in enumerate(train_loader):
             if cfg.evaluate:
@@ -142,7 +143,7 @@ for e in range(cfg.epochs):
             masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
             masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
             loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
-            train_loss += loss.detach().item()
+            train_loss += loss.item()
             train_step += 1
 
             # convert mask to samples
@@ -165,7 +166,7 @@ for e in range(cfg.epochs):
                     #'train_points': pts_train_num,
                 })
 
-            if cfg.logging and batch_idx%400 == 1:
+            if cfg.logging and batch_idx%200 == 50:
                 # channel plot
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
@@ -216,7 +217,7 @@ for e in range(cfg.epochs):
                 masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
-                val_loss += loss.detach().item()
+                val_loss += loss.item()
                 val_step += 1
 
                 # convert mask to samples
@@ -234,7 +235,7 @@ for e in range(cfg.epochs):
                         #'val_points': pts_train_num,
                     })
 
-                if cfg.logging and batch_idx%400 == 1:
+                if cfg.logging and batch_idx%200 == 50:
                     # channel plot
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
