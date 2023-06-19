@@ -21,7 +21,9 @@ sys.path.append(str(Path(__file__).parent.parent))
 from model import StofNet
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from utils.gaussian import gaussian_kernel
-from utils.mask2samples import samples2mask, samples2nested_list
+from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
+from utils.metrics import toa_rmse
+from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
 from utils.transforms import NormalizeVol, RandomVol
 from utils.collate_fn import collate_fn
@@ -88,10 +90,18 @@ if cfg.logging:
     wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg)
     wb.config.update(dict(epochs=cfg.epochs, batch_size=cfg.batch_size, learning_rate=cfg.lr, val_percent=val_percent))
     wandb.define_metric('train_loss', step_metric='train_step')
-    wandb.define_metric('val_loss', step_metric='val_step')
-    wandb.define_metric('train_toa_diff', step_metric='train_step')
     wandb.define_metric('train_points', step_metric='train_step')
-    wandb.define_metric('val_toa_diff', step_metric='val_step')
+    wandb.define_metric('val_loss', step_metric='val_step')
+    wandb.define_metric('val_points', step_metric='val_step')
+    wandb.define_metric('val_toa_distance', step_metric='val_step')
+    wandb.define_metric('val_toa_precision', step_metric='val_step')
+    wandb.define_metric('val_toa_recall', step_metric='val_step')
+    wandb.define_metric('val_toa_jaccard', step_metric='val_step')
+    wandb.define_metric('val_toa_true_positive', step_metric='val_step')
+    wandb.define_metric('val_toa_false_positive', step_metric='val_step')
+    wandb.define_metric('val_toa_false_negative', step_metric='val_step')
+    wandb.define_metric('val_toa_false_negative', step_metric='val_step')
+    wandb.define_metric('val_ideal_threshold', step_metric='val_step')
     wandb.define_metric('lr', step_metric='epoch')
 
 # load model
@@ -137,15 +147,13 @@ for e in range(cfg.epochs):
             gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
             # inference
-            tic = time.process_time()
             masks_pred = model(frame)
-            #print(time.process_time()-tic)
 
             # train loss
-            masks_true = samples2mask(gt_true, masks_pred) * 1
-            masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-            masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-            loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+            masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+            masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+            masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+            loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
             train_loss += loss.item()
             train_step += 1
 
@@ -164,13 +172,12 @@ for e in range(cfg.epochs):
                 wb.log({
                     'train_loss': loss.item(),
                     'train_step': train_step,
-                    #'train_toa_diff': toa_diff,
-                    #'train_points': pts_train_num,
+                    'train_points': (masks_true>0).sum(),
                 })
 
             if cfg.logging and batch_idx%800 == 50:
                 # channel plot
-                es_samples = [None] #samples2nested_list(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
@@ -216,10 +223,10 @@ for e in range(cfg.epochs):
                 masks_pred = model(frame)
 
                 # validation loss
-                masks_true = samples2mask(gt_true, masks_pred) * 1
-                masks_true = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                masks_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                loss = loss_mse(masks_blur.squeeze(1), masks_true.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 val_loss += loss.item()
                 val_step += 1
 
@@ -229,17 +236,36 @@ for e in range(cfg.epochs):
                 masks_pred = unravel_batch_dim(masks_pred)
                 masks_true = unravel_batch_dim(masks_true)
 
+                # estimate ideal threshold
+                masks_supp = masks_pred.clone()
+                ideal_threshold = find_threshold(masks_supp.cpu(), masks_true.cpu()/masks_true.cpu().max(), window_size=cfg.kernel_size)
+
+                # get estimated samples
+                masks_supp[masks_supp<cfg.th] = 0
+                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+
+                # get errors
+                toa_errs = toa_rmse(gt_samples, es_samples, tol=cfg.etol)
+
                 if cfg.logging:
                     wb.log({
                         'val_loss': loss.item(),
                         'val_step': val_step,
-                        #'val_toa_diff': toa_diff,
-                        #'val_points': pts_train_num,
+                        'val_points': (masks_true>0).sum(),
+                        'val_toa_distance': toa_errs[0].mean(),
+                        'val_toa_precision': toa_errs[1].mean(),
+                        'val_toa_recall': toa_errs[2].mean(),
+                        'val_toa_jaccard': toa_errs[3].mean(),
+                        'val_toa_true_positive': toa_errs[4].mean(),
+                        'val_toa_false_positive': toa_errs[5].mean(),
+                        'val_toa_false_negative': toa_errs[6].mean(),
+                        'val_toa_false_negative': toa_errs[6].mean(),
+                        'val_ideal_threshold': ideal_threshold,
                     })
 
                 if cfg.logging and batch_idx%800 == 50:
                     # channel plot
-                    es_samples = [None] #samples2nested_list(masks_pred, window_size=cfg.kernel_size)
+                    es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
