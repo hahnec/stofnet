@@ -168,6 +168,11 @@ for e in range(cfg.epochs):
             loss.backward()
             optimizer.step()
 
+            # get estimated samples
+            masks_supp = masks_pred.clone()
+            masks_supp[masks_supp<cfg.th] = 0
+            es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+
             if cfg.logging:
                 wb.log({
                     'train_loss': loss.item(),
@@ -177,8 +182,7 @@ for e in range(cfg.epochs):
 
             if cfg.logging and batch_idx%800 == 50:
                 # channel plot
-                es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor).cpu().numpy()
-                fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
+                fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
                 # image frame plot
@@ -237,10 +241,10 @@ for e in range(cfg.epochs):
                 masks_true = unravel_batch_dim(masks_true)
 
                 # estimate ideal threshold
-                masks_supp = masks_pred.clone()
-                ideal_threshold = find_threshold(masks_supp.cpu(), masks_true.cpu()/masks_true.cpu().max(), window_size=cfg.kernel_size)
-
+                ideal_threshold = find_threshold(masks_pred.cpu(), masks_true.cpu()/masks_true.cpu().max(), window_size=cfg.kernel_size)
+        
                 # get estimated samples
+                masks_supp = masks_pred.clone()
                 masks_supp[masks_supp<cfg.th] = 0
                 es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
 
@@ -264,9 +268,9 @@ for e in range(cfg.epochs):
                     })
 
                 if cfg.logging and batch_idx%800 == 50:
+
                     # channel plot
-                    es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor).cpu().numpy()
-                    fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
+                    fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
                     # image frame plot
