@@ -263,7 +263,6 @@ for e in range(cfg.epochs):
                         'val_toa_true_positive': toa_errs[4].mean(),
                         'val_toa_false_positive': toa_errs[5].mean(),
                         'val_toa_false_negative': toa_errs[6].mean(),
-                        'val_toa_false_negative': toa_errs[6].mean(),
                         'val_ideal_threshold': ideal_threshold,
                     })
 

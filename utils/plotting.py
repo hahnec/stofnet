@@ -27,7 +27,7 @@ def plot_channel_overview(frame, corresponding_toas, echoes=None, max_val=None, 
         axs[j].plot(frame[i, :])
         axs[j].plot(abs(hilbert(frame[i, :])), c='gray')
         for c in range(corresponding_toas.shape[-1]):
-            axs[j].plot([corresponding_toas[i, c],]*2, [max_val, -max_val], c=colors[c%len(colors)]) if i < corresponding_toas.shape[-2] else None
+            axs[j].plot([corresponding_toas[i, c],]*2, [.8*max_val, -.8*max_val], c=colors[c%len(colors)]) if i < corresponding_toas.shape[-2] else None
             axs[j].plot([echoes[i][c],]*2, [max_val, -max_val], c='black', linestyle='dashed') if echoes is not None and i < len(echoes) and c < len(echoes[i]) else None
             axs[j].tick_params(top=False, bottom=False, left=False, right=False, labelleft=False, labelbottom=False)
             
