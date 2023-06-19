@@ -38,8 +38,8 @@ def samples2nested_list(scores, window_size, upsample_factor=1):
 def samples2coords(scores, window_size, upsample_factor=1):
 
     indices = get_maxima_positions(scores, window_size)
-    b_max = int(torch.max(indices[:, 0])) + 1
-    c_max = int(torch.max(indices[:, 1])) + 1
+    b_max = int(max(indices[:, 0])) + 1
+    c_max = int(max(indices[:, 1])) + 1
     samples = indices[:, 2].float() / upsample_factor
 
     # Compute the flattened indices for gather operation
