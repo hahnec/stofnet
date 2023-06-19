@@ -20,4 +20,4 @@ def toa_rmse(gt_samples, es_samples, tol=1):
     mins[mins>tol] = torch.nan
     mes = torch.nanmean(mins, dim=-1)
 
-    return mes, precisions, recalls, jaccards, tps, fps, fns
+    return mes, precisions, recalls, jaccards, tps.float(), fps.float(), fns.float()
