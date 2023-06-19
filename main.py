@@ -177,7 +177,7 @@ for e in range(cfg.epochs):
 
             if cfg.logging and batch_idx%800 == 50:
                 # channel plot
-                es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor).cpu().numpy()
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
@@ -265,7 +265,7 @@ for e in range(cfg.epochs):
 
                 if cfg.logging and batch_idx%800 == 50:
                     # channel plot
-                    es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                    es_samples = samples2coords(masks_pred, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor).cpu().numpy()
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0], magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
