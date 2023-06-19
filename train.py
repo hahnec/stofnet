@@ -18,10 +18,11 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from model import StofNet
+from models import StofNet, ZonziniNetLarge
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
-from utils.gaussian import gaussian_kernel
 from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
+from utils.gaussian import gaussian_kernel
+from utils.hilbert import hilbert_transform
 from utils.metrics import toa_rmse
 from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
@@ -105,7 +106,13 @@ if cfg.logging:
     wandb.define_metric('lr', step_metric='epoch')
 
 # load model
-model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
+if cfg.model.lower() == 'stofnet':
+    model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
+elif cfg.model.lower() == 'zonzini':
+    model = ZonziniNetLarge()
+else:
+    raise Exception('Model not recognized')
+
 model = model.to(cfg.device)
 model.eval()
 
@@ -143,17 +150,24 @@ for e in range(cfg.epochs):
             # flatten channel and batch dimension
             frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
             gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
-            gt_samples[gt_samples<=0] = torch.nan
+            gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
             gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
             # inference
             masks_pred = model(frame)
 
             # train loss
-            masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
-            masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-            masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-            loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+            if cfg.model.lower() == 'stofnet':
+                masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+            elif cfg.model.lower() == 'zonzini':
+                # pick ToA sample from maximum echo (Zonzini's model detect a single echo)
+                max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true//cfg.upsample_factor)
+                idx_values = max_values.argmax(-1)
+                masks_true = torch.gather(gt_samples, -1, idx_values)
+                loss = loss_mse(masks_pred, masks_true)
             train_loss += loss.item()
             train_step += 1
 
@@ -169,9 +183,13 @@ for e in range(cfg.epochs):
             optimizer.step()
 
             # get estimated samples
-            masks_supp = masks_pred.clone()
-            masks_supp[masks_supp<cfg.th] = 0
-            es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+            if cfg.model.lower() == 'stofnet':
+                masks_supp = masks_pred.clone().detach()
+                masks_supp[masks_supp<cfg.th] = 0
+                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+            elif cfg.model.lower() == 'zonzini':
+                ideal_threshold = 0
+                es_samples = masks_pred.clone().detach()
 
             if cfg.logging:
                 wb.log({
@@ -185,13 +203,14 @@ for e in range(cfg.epochs):
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
-                # image frame plot
-                fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-                axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                plt.tight_layout()
-                wb_img_upload(fig, log_key='train_frames')
-                plt.close('all')
+                if cfg.model.lower() == 'stofnet':
+                    # image frame plot
+                    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+                    axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                    axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                    plt.tight_layout()
+                    wb_img_upload(fig, log_key='train_frames')
+                    plt.close('all')
 
             pbar.update(pbar_update)
 
@@ -203,7 +222,7 @@ for e in range(cfg.epochs):
             'epoch': e,
         })
 
-    scheduler.step()
+    if not cfg.evaluate: scheduler.step()
     torch.cuda.empty_cache()
 
     # Validation
@@ -220,17 +239,24 @@ for e in range(cfg.epochs):
                 # flatten channel and batch dimension
                 frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
                 gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
-                gt_samples[gt_samples<=0] = torch.nan
+                gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
                 gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
                 # inference
                 masks_pred = model(frame)
 
                 # validation loss
-                masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
-                masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                if cfg.model.lower() == 'stofnet':
+                    masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                    masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                    masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                    loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                elif cfg.model.lower() == 'zonzini':
+                    # pick ToA sample from maximum echo (Zonzini's model detect a single echo)
+                    max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true//cfg.upsample_factor)
+                    idx_values = max_values.argmax(-1)
+                    masks_true = torch.gather(gt_samples, -1, idx_values)
+                    loss = loss_mse(masks_pred, masks_true)
                 val_loss += loss.item()
                 val_step += 1
 
@@ -240,13 +266,18 @@ for e in range(cfg.epochs):
                 masks_pred = unravel_batch_dim(masks_pred)
                 masks_true = unravel_batch_dim(masks_true)
 
-                # estimate ideal threshold
-                ideal_threshold = find_threshold(masks_pred.cpu(), masks_true.cpu()/masks_true.cpu().max(), window_size=cfg.kernel_size)
-        
-                # get estimated samples
-                masks_supp = masks_pred.clone()
-                masks_supp[masks_supp<cfg.th] = 0
-                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                if cfg.model.lower() == 'stofnet':
+                    # estimate ideal threshold
+                    max_val = float(masks_true.max())
+                    ideal_threshold = find_threshold(masks_pred.cpu()/max_val, masks_true.cpu()/max_val, window_size=cfg.kernel_size) * max_val
+
+                    # get estimated samples
+                    masks_supp = masks_pred.clone().detach()
+                    masks_supp[masks_supp<cfg.th] = 0
+                    es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                elif cfg.model.lower() == 'zonzini':
+                    ideal_threshold = 0
+                    es_samples = masks_pred.clone().detach()
 
                 # get errors
                 toa_errs = toa_rmse(gt_samples, es_samples, tol=cfg.etol)
@@ -272,13 +303,14 @@ for e in range(cfg.epochs):
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
-                    # image frame plot
-                    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-                    axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                    axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                    plt.tight_layout()
-                    wb_img_upload(fig, log_key='val_frames')
-                    plt.close('all')
+                    if cfg.model.lower() == 'stofnet':
+                        # image frame plot
+                        fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+                        axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                        axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                        plt.tight_layout()
+                        wb_img_upload(fig, log_key='val_frames')
+                        plt.close('all')
 
                 pbar.update(pbar_update)
 
