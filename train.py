@@ -201,7 +201,7 @@ for e in range(cfg.epochs):
             optimizer.step()
 
             # get estimated samples
-            if cfg.model.lower() == 'stofnet':
+            if cfg.model.lower() in ('stofnet', 'sincnet'):
                 masks_supp = masks_pred.clone().detach()
                 masks_supp[masks_supp<cfg.th] = 0
                 es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
@@ -221,7 +221,7 @@ for e in range(cfg.epochs):
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
                 
-                if cfg.model.lower() == 'stofnet':
+                if cfg.model.lower() in ('stofnet', 'sincnet'):
                     # image frame plot
                     fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                     axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
@@ -323,7 +323,7 @@ for e in range(cfg.epochs):
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
 
-                    if cfg.model.lower() == 'stofnet':
+                    if cfg.model.lower() in ('stofnet', 'sincnet'):
                         # image frame plot
                         fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                         axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
