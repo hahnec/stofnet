@@ -7,7 +7,8 @@ jaccard_index = lambda tp, fn, fp: tp/(fn+tp+fp)*100
 
 def toa_rmse(gt_samples, es_samples, tol=1):
 
-    distances = abs(gt_samples[..., None] - es_samples[:, :, None, :].repeat(1, 1, gt_samples.shape[-1], 1))
+    gt_samples[gt_samples==0] = torch.nan
+    distances = abs(gt_samples[..., None] - es_samples[..., None, :].repeat(1, gt_samples.shape[-1], 1))
     mins, args = distances.min(-1)
 
     tps = (mins <=tol).sum(-1)

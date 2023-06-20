@@ -197,8 +197,7 @@ for e in range(cfg.epochs):
             # get estimated samples
             if cfg.model.lower() in ('stofnet', 'sincnet'):
                 masks_supp = masks_pred.clone().detach()
-                masks_supp[masks_supp<cfg.th] = 0
-                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
             elif cfg.model.lower() == 'zonzini':
                 ideal_threshold = 0
                 es_samples = masks_pred.clone().detach()
@@ -273,7 +272,7 @@ for e in range(cfg.epochs):
                 elif cfg.model.lower() == 'zonzini':
                     # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
                     gt_true //= cfg.upsample_factor
-                    gt_true[gt_true==0] = 12
+                    gt_true[gt_true==0] = 1e12
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                     idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                     masks_true = torch.gather(gt_samples, -1, idx_values)
@@ -288,8 +287,7 @@ for e in range(cfg.epochs):
 
                     # get estimated samples
                     masks_supp = masks_pred.clone().detach()
-                    masks_supp[masks_supp<cfg.th] = 0
-                    es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, upsample_factor=cfg.upsample_factor)
+                    es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() == 'zonzini':
                     ideal_threshold = 0
                     es_samples = masks_pred.clone().detach()
@@ -302,13 +300,13 @@ for e in range(cfg.epochs):
                         'val_loss': loss.item(),
                         'val_step': val_step,
                         'val_points': (masks_true>0).sum(),
-                        'val_toa_distance': toa_errs[0].mean(),
-                        'val_toa_precision': toa_errs[1].mean(),
-                        'val_toa_recall': toa_errs[2].mean(),
-                        'val_toa_jaccard': toa_errs[3].mean(),
-                        'val_toa_true_positive': toa_errs[4].mean(),
-                        'val_toa_false_positive': toa_errs[5].mean(),
-                        'val_toa_false_negative': toa_errs[6].mean(),
+                        'val_toa_distance': torch.nanmean(toa_errs[0]),
+                        'val_toa_precision': torch.nanmean(toa_errs[1]),
+                        'val_toa_recall': torch.nanmean(toa_errs[2]),
+                        'val_toa_jaccard': torch.nanmean(toa_errs[3]),
+                        'val_toa_true_positive': torch.nanmean(toa_errs[4]),
+                        'val_toa_false_positive': torch.nanmean(toa_errs[5]),
+                        'val_toa_false_negative': torch.nanmean(toa_errs[6]),
                         'val_ideal_threshold': ideal_threshold,
                     })
 
