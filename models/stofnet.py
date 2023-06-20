@@ -9,7 +9,7 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor, hilbert_opt=True, concat_oscil=False):
+    def __init__(self, upsample_factor, hilbert_opt=True, concat_oscil=True):
         super(StofNet, self).__init__()
 
         self.hilbert = HilbertTransform(concat_oscil=concat_oscil) if hilbert_opt else None
