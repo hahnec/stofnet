@@ -189,12 +189,6 @@ for e in range(cfg.epochs):
             train_loss += loss.item()
             train_step += 1
 
-            # convert mask to samples
-            frame = unravel_batch_dim(frame)
-            gt_samples = unravel_batch_dim(gt_samples)
-            masks_pred = unravel_batch_dim(masks_pred)
-            masks_true = unravel_batch_dim(masks_true)
-
             # back-propagate
             optimizer.zero_grad()
             loss.backward()
@@ -217,6 +211,13 @@ for e in range(cfg.epochs):
                 })
 
             if cfg.logging and batch_idx%800 == 50:
+                # convert mask to samples
+                frame = unravel_batch_dim(frame)
+                gt_samples = unravel_batch_dim(gt_samples)
+                es_samples = unravel_batch_dim(es_samples)
+                masks_pred = unravel_batch_dim(masks_pred)
+                masks_true = unravel_batch_dim(masks_true)
+
                 # channel plot
                 fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                 wb_img_upload(fig, log_key='train_channels')
@@ -280,12 +281,6 @@ for e in range(cfg.epochs):
                 val_loss += loss.item()
                 val_step += 1
 
-                # convert mask to samples
-                frame = unravel_batch_dim(frame)
-                gt_samples = unravel_batch_dim(gt_samples)
-                masks_pred = unravel_batch_dim(masks_pred)
-                masks_true = unravel_batch_dim(masks_true)
-
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
                     # estimate ideal threshold
                     max_val = float(masks_true.max())
@@ -318,7 +313,12 @@ for e in range(cfg.epochs):
                     })
 
                 if cfg.logging and batch_idx%800 == 50:
-
+                    # convert mask to samples
+                    frame = unravel_batch_dim(frame)
+                    gt_samples = unravel_batch_dim(gt_samples)
+                    es_samples = unravel_batch_dim(es_samples)
+                    masks_pred = unravel_batch_dim(masks_pred)
+                    masks_true = unravel_batch_dim(masks_true)
                     # channel plot
                     fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
                     wb_img_upload(fig, log_key='val_channels')
