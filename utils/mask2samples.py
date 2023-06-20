@@ -87,10 +87,13 @@ def samples2coords(scores, window_size, threshold=.5, upsample_factor=1, echo_ma
     coords = torch.zeros((c_max, max_samples_per_channel), device=scores.device)
     coords.view(-1)[flattened_indices_3d] = indices[:, 1].float()
 
-    # reduce number of echoes based on score amplitudes
+    # align number of echoes based on score amplitudes
     if echo_max and echo_max < coords.shape[-1]:
         amplitudes = get_amplitudes(scores, coords)
         coords = reduce_echoes(torch.dstack([coords, amplitudes]), echo_max=echo_max)[..., 0]
+    elif echo_max and echo_max > coords.shape[-1]:
+        length = echo_max - coords.shape[-1]
+        coords = torch.cat([coords, torch.zeros(coords.shape[0], length, device=coords.device, dtype=coords.dtype)], dim=-1)
 
     coords /= upsample_factor
 
