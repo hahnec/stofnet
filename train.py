@@ -111,7 +111,21 @@ if cfg.model.lower() == 'stofnet':
 elif cfg.model.lower() == 'zonzini':
     model = ZonziniNetLarge()
 elif cfg.model.lower() == 'sincnet':
-    model = SincNet()
+    cfg.upsample_factor = 1
+    sincnet_params = {'input_dim': sample_num*cfg.rf_scale_factor,
+                        'fs': cfg.fs,
+                        'cnn_N_filt': [128, 128, 128, 1],
+                        'cnn_len_filt': [1023, 11, 9, 7],
+                        'cnn_max_pool_len': [1, 1, 1, 1],
+                        'cnn_use_laynorm_inp': False,
+                        'cnn_use_batchnorm_inp': False,
+                        'cnn_use_laynorm': [False, False, False, False],
+                        'cnn_use_batchnorm': [True, True, True, True],
+                        'cnn_act': ['leaky_relu', 'leaky_relu', 'leaky_relu', 'linear'],
+                        'cnn_drop': [0.0, 0.0, 0.0, 0.0],
+                        'use_sinc': True,
+                        }
+    model = SincNet(sincnet_params)
 else:
     raise Exception('Model not recognized')
 
@@ -159,7 +173,7 @@ for e in range(cfg.epochs):
             masks_pred = model(frame)
 
             # train loss
-            if cfg.model.lower() == 'stofnet':
+            if cfg.model.lower() in ('stofnet', 'sincnet'):
                 masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
                 masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
@@ -250,7 +264,7 @@ for e in range(cfg.epochs):
                 masks_pred = model(frame)
 
                 # validation loss
-                if cfg.model.lower() == 'stofnet':
+                if cfg.model.lower() in ('stofnet', 'sincnet'):
                     masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
@@ -272,7 +286,7 @@ for e in range(cfg.epochs):
                 masks_pred = unravel_batch_dim(masks_pred)
                 masks_true = unravel_batch_dim(masks_true)
 
-                if cfg.model.lower() == 'stofnet':
+                if cfg.model.lower() in ('stofnet', 'sincnet'):
                     # estimate ideal threshold
                     max_val = float(masks_true.max())
                     ideal_threshold = find_threshold(masks_pred.cpu()/max_val, masks_true.cpu()/max_val, window_size=cfg.kernel_size) * max_val
