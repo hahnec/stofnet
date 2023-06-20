@@ -75,9 +75,8 @@ def samples2coords(scores, window_size, threshold=.5, upsample_factor=1, echo_ma
         return torch.zeros((scores.shape[0], scores.shape[1], 1), device=scores.device)
 
     # Compute the flattened indices for gather operation
-    c_max = int(max(indices[:, 0])) + 1
-    flattened_indices_2d = indices[:, 0]
-    unique_indices_2d, counts = torch.unique(flattened_indices_2d, return_counts=True)
+    c_max = scores.shape[0]
+    counts = torch.bincount(indices[:, 0], minlength=c_max)
     max_samples_per_channel = int(max(counts))
 
     cnts_idx = torch.vstack([torch.cat((torch.arange(0, count)+i*max_samples_per_channel, -1*torch.ones(max_samples_per_channel-count)), dim=-1) for i, count in enumerate(counts)]).long().to(scores.device)
