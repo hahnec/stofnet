@@ -18,7 +18,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models import StofNet, ZonziniNetLarge
+from models import StofNet, ZonziniNetLarge, SincNet
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
 from utils.gaussian import gaussian_kernel
@@ -110,6 +110,8 @@ if cfg.model.lower() == 'stofnet':
     model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
 elif cfg.model.lower() == 'zonzini':
     model = ZonziniNetLarge()
+elif cfg.model.lower() == 'sincnet':
+    model = SincNet()
 else:
     raise Exception('Model not recognized')
 
@@ -163,9 +165,11 @@ for e in range(cfg.epochs):
                 masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                 loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
             elif cfg.model.lower() == 'zonzini':
-                # pick ToA sample from maximum echo (Zonzini's model detect a single echo)
-                max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true//cfg.upsample_factor)
-                idx_values = max_values.argmax(-1)
+                # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                gt_true //= cfg.upsample_factor
+                gt_true[gt_true==0] = 12
+                max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
+                idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                 masks_true = torch.gather(gt_samples, -1, idx_values)
                 loss = loss_mse(masks_pred, masks_true)
             train_loss += loss.item()
@@ -252,9 +256,11 @@ for e in range(cfg.epochs):
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 elif cfg.model.lower() == 'zonzini':
-                    # pick ToA sample from maximum echo (Zonzini's model detect a single echo)
-                    max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true//cfg.upsample_factor)
-                    idx_values = max_values.argmax(-1)
+                    # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    gt_true //= cfg.upsample_factor
+                    gt_true[gt_true==0] = 12
+                    max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
+                    idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                     masks_true = torch.gather(gt_samples, -1, idx_values)
                     loss = loss_mse(masks_pred, masks_true)
                 val_loss += loss.item()
