@@ -40,7 +40,7 @@ def samples2coords(scores, window_size, upsample_factor=1):
     indices = get_maxima_positions(scores, window_size)
 
     # catch case where no maxima is found
-    if indices.numel() == 0:
+    if indices.numel() == 0 | indices.shape[-1] != 3:
         return torch.zeros((scores.shape[0], scores.shape[1], 1), device=scores.device)
 
     b_max = int(max(indices[:, 0])) + 1
