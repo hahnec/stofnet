@@ -181,7 +181,7 @@ for e in range(cfg.epochs):
             elif cfg.model.lower() == 'zonzini':
                 # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
                 gt_true //= cfg.upsample_factor
-                gt_true[gt_true==0] = 12
+                gt_true[gt_true==0] = 1e12
                 max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                 idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                 masks_true = torch.gather(gt_samples, -1, idx_values)
