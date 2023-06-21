@@ -25,7 +25,8 @@ class ChirpDataset(Dataset):
 
         # load sensor config
         self.cfg = OmegaConf.load(str(self.root_dir / 'sensor_specs.yaml'))
-        
+        self.cfg.speed_of_sound = 331.4 + 0.6 * self.cfg.temperature
+
         # replicate ground truth data to match sample number
         gt_scale = len(self.samples_env) // len(self.gt_env)
         self.gt_env = [gt for el in self.gt_env for gt in [el,]*gt_scale]
@@ -60,7 +61,6 @@ class ChirpDataset(Dataset):
         y = f(t)
 
         rf_data = y * np.exp(2j*np.pi*fc*t)
-        #rf_data *= 2**.5
 
         return rf_data.real
 
@@ -76,6 +76,10 @@ class ChirpDataset(Dataset):
         iq_gt = np.loadtxt(self.gt_iq[idx])
         gt_position = self.gt_positions[idx]
 
+        # convert distance to travel time and sample index (GT position is [mm])
+        toa = 2*(gt_position*1e-3) / self.cfg.speed_of_sound
+        sample_position = toa * self.cfg.fhz_sample
+
         # convert to complex numbers
         iq_data = iq_data[:, 0] + 1j * iq_data[:, 1]
         iq_gt = iq_gt[:, 0] + 1j * iq_gt[:, 1]
@@ -84,12 +88,12 @@ class ChirpDataset(Dataset):
         rf_data = self.iq2rf(iq_data, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rescale_factor)
         rf_gt = self.iq2rf(iq_gt, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rescale_factor)
 
-        return envelope_data, rf_data, envelope_gt, rf_gt, gt_position
+        return envelope_data, rf_data, envelope_gt, rf_gt, sample_position
 
 if __name__ == '__main__':
 
     script_path = Path(__file__).parent.resolve()
-    dataset = ChirpDataset(script_path / 'stof_chirp101_dataset', 'train')
+    dataset = ChirpDataset(script_path / 'stof_chirp101_dataset', 'test')
 
     from torch.utils.data import DataLoader
     loader_args = dict(batch_size=2, num_workers=1, pin_memory=False)
@@ -99,7 +103,7 @@ if __name__ == '__main__':
         print(batch_idx)
         print(batch_data)
 
-        envelope_data, rf_data, envelope_gt, rf_gt, gt_position = batch_data
+        envelope_data, rf_data, envelope_gt, rf_gt, sample_position = batch_data
 
         fs = dataset.cfg.fhz_sample
         rescale_factor = dataset.rescale_factor
@@ -114,4 +118,5 @@ if __name__ == '__main__':
         plt.plot(t, rf_gt[0])
         plt.plot(x, envelope_data[0])
         plt.plot(x, envelope_gt[0])
+        plt.plot([t[(sample_position[0]*rescale_factor).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
         plt.show()
