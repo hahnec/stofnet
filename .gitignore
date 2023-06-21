@@ -130,6 +130,5 @@ dmypy.json
 
 .vscode
 
-# links
-simple_tracker
-multimodal_emg
+# paths
+stof_chirp101_dataset
