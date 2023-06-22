@@ -8,7 +8,7 @@ from scipy.interpolate import interp1d
 
 
 class ChirpDataset(Dataset):
-    def __init__(self, root_dir, split_dirname='test', rf_scale_factor=20, transforms=None):
+    def __init__(self, root_dir, split_dirname='test', rf_scale_factor=10, transforms=None):
         
         # pass inputs to member variables
         self.root_dir = Path(root_dir)
@@ -16,26 +16,40 @@ class ChirpDataset(Dataset):
         self.rf_scale_factor = rf_scale_factor
         self.transforms = transforms
 
-        # load sample paths
-        self.samples_env, self.samples_iq = self._get_file_paths(str(self.root_dir / self.split_dirname))
-
-        # load ground truth paths
-        self.gt_env, self.gt_iq = self._get_file_paths(str(self.root_dir / 'truth'))
-
-        # load ground truth positions
-        self.gt_positions = np.genfromtxt(str(self.root_dir / 'truth' / 'true_measurement_positions.csv'), delimiter=',')[:, 1]
-
         # load sensor config
         self.cfg = OmegaConf.load(str(self.root_dir / 'sensor_specs.yaml'))
-        self.cfg.speed_of_sound = 331.4 + 0.6 * self.cfg.temperature
+        self.cfg.speed_of_sound = 331.4 + 0.6 * self.cfg.temperature_celsius
 
-        # replicate ground truth data to match sample number
-        gt_scale = len(self.samples_env) // len(self.gt_env)
-        self.gt_env = [gt for el in self.gt_env for gt in [el,]*gt_scale]
-        self.gt_iq = [gt for el in self.gt_iq for gt in [el,]*gt_scale]
-        self.gt_positions = [gt for el in self.gt_positions for gt in [el,]*gt_scale]
-        
-        assert len(self.samples_env) == len(self.gt_env) == len(self.samples_iq) == len(self.gt_iq) == len(self.gt_positions), 'inconsistent sample numbers'
+        # initialize filename lists
+        self.samples_env = []
+        self.samples_iq = []
+        self.gt_iq = []
+        self.gt_positions = []
+        self.labels = []
+
+        # iterate through target classes
+        target_dirs = [el for el in self.root_dir.iterdir() if el.is_dir()]
+        for target_dir in target_dirs:
+
+            # load sample paths
+            samples_env, samples_iq = self._get_file_paths(str(target_dir / self.split_dirname))
+            self.samples_env.extend(samples_env)
+            self.samples_iq.extend(samples_iq)
+
+            # load ground truth paths
+            gt_env, gt_iq = self._get_file_paths(str(target_dir / 'truth'))
+
+            # load ground truth positions
+            gt_positions = np.genfromtxt(str(target_dir / 'truth' / 'true_measurement_positions.csv'), delimiter=',')[:, 1]
+
+            # replicate ground truth data to match sample number
+            gt_scale = len(samples_iq) // len(gt_iq)
+            self.gt_iq.extend([gt for el in gt_iq for gt in [el,]*gt_scale])
+            self.gt_positions.extend([gt for el in gt_positions for gt in [el,]*gt_scale])
+            self.labels.extend([target_dir.name,] * len(samples_iq))
+            
+            assert len(self.samples_env) == len(self.samples_iq) == len(self.gt_iq) == len(self.gt_positions) == len(self.labels), \
+                'inconsistent sample numbers'
 
     @staticmethod
     def _get_file_paths(dir_path):
@@ -79,14 +93,14 @@ class ChirpDataset(Dataset):
 
         # load data
         envelope_data = np.loadtxt(self.samples_env[idx])
-        envelope_gt = np.loadtxt(self.gt_env[idx])
         iq_data = np.loadtxt(self.samples_iq[idx])
         iq_gt = np.loadtxt(self.gt_iq[idx])
         gt_position = self.gt_positions[idx]
+        label = self.labels[idx]
 
         # convert distance to travel time and sample index (GT position is [mm])
         toa = 2*(gt_position*1e-3) / self.cfg.speed_of_sound
-        sample_position = toa * self.cfg.fhz_sample * self.rf_scale_factor
+        gt_sample = toa * self.cfg.fhz_sample * self.rf_scale_factor
 
         # convert to complex numbers
         iq_data = iq_data[:, 0] + 1j * iq_data[:, 1]
@@ -98,24 +112,31 @@ class ChirpDataset(Dataset):
 
         if self.transforms:
             for transform in self.transforms:
-                envelope_data, envelope_gt, iq_data, iq_gt = [transform(data) for data in [envelope_data, envelope_gt, iq_data, iq_gt]]
+                envelope_data, iq_data, iq_gt = [transform(data) for data in [envelope_data, iq_data, iq_gt]]
 
-        return envelope_data, rf_data, envelope_gt, rf_gt, sample_position
+        return envelope_data, rf_data, rf_gt, gt_sample, gt_position, label
 
 if __name__ == '__main__':
 
-    script_path = Path(__file__).parent.resolve()
-    dataset = ChirpDataset(script_path / 'stof_chirp101_dataset', 'test')
-
+    import torch
     from torch.utils.data import DataLoader
+    torch.manual_seed(3008)
+    import matplotlib.pyplot as plt
+    import sys
+    sys.path.append(str(Path(__file__).parent.parent))
+    from utils.zip_extract import zip_extract
+
+    script_path = Path(__file__).parent.resolve()
+    data_path = script_path / 'stof_chirp101_dataset'
+    zip_extract(data_path)
+
+    dataset = ChirpDataset(script_path / 'stof_chirp101_dataset', 'test')
     loader_args = dict(batch_size=2, num_workers=1, pin_memory=False)
-    data_loader = DataLoader(dataset, shuffle=False, **loader_args)
+    data_loader = DataLoader(dataset, shuffle=True, **loader_args)
 
     for batch_idx, batch_data in enumerate(data_loader):
-        print(batch_idx)
-        print(batch_data)
 
-        envelope_data, rf_data, envelope_gt, rf_gt, sample_position = batch_data
+        envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
 
         fs = dataset.cfg.fhz_sample
         rf_scale_factor = dataset.rf_scale_factor
@@ -124,11 +145,11 @@ if __name__ == '__main__':
         x = np.linspace(0, data_len1/fs, num=data_len1, endpoint=True)
         t = np.linspace(0, data_len2/fs/rf_scale_factor, num=data_len2, endpoint=True)
 
-        import matplotlib.pyplot as plt
-        plt.plot(t, rf_data[0])
-        plt.plot(t, rf_data[0], '.')
-        plt.plot(t, rf_gt[0])
-        plt.plot(x, envelope_data[0])
-        plt.plot(x, envelope_gt[0])
-        plt.plot([t[(sample_position[0]).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
+        plt.plot(t, rf_data[0], label='RF data')
+        plt.plot(t, rf_data[0], '.', label='RF data points')
+        plt.plot(t, rf_gt[0], label='RF ground truth')
+        plt.plot(x, envelope_data[0], label='Envelope measurement')
+        plt.plot([t[(gt_sample[0]).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed', label='GT position')
+        plt.title(label=label[0]+' @ '+str(float(gt_position[0]))+'mm')
+        plt.legend()
         plt.show()

@@ -11,7 +11,6 @@ import argparse
 import os
 from omegaconf import OmegaConf
 from pathlib import Path
-import zipfile
 import wandb
 import matplotlib.pyplot as plt
 import time
@@ -29,8 +28,7 @@ from utils.metrics import toa_rmse
 from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
 from utils.transforms import NormalizeVol, RandomVol
-from utils.collate_fn import collate_fn
-
+from utils.zip_extract import zip_extract
 
 # load config
 script_path = Path(__file__).parent.resolve()
@@ -77,9 +75,7 @@ if cfg.data_dir.lower().__contains__('pala'):
 elif cfg.data_dir.lower().__contains__('chirp'):
     # extract data folder from zip
     data_path = script_path / cfg.data_dir
-    if not data_path.exists():
-        with zipfile.ZipFile(str(data_path)+'.zip', 'r') as zip_ref:
-            zip_ref.extractall(data_path.parent)
+    zip_extract(data_path)
     # load dataset
     dataset = ChirpDataset(
         root_dir = data_path,
@@ -181,17 +177,17 @@ for e in range(cfg.epochs):
 
             # get batch data
             if cfg.data_dir.lower().__contains__('pala'):
-                bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+                bmode, gt_points, frame, gt_sample, pts_pala = batch_data
                 frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
+                gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
             elif cfg.data_dir.lower().__contains__('chirp'):
-                envelope_data, rf_data, envelope_gt, rf_gt, gt_samples = batch_data
+                envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
                 frame = rf_data.float().unsqueeze(1)
-                gt_samples = gt_samples.unsqueeze(1)
+                gt_sample = gt_sample.unsqueeze(1)
             frame = frame.to(cfg.device)
-            gt_samples = gt_samples.to(cfg.device)
-            gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
-            gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
+            gt_sample = gt_sample.to(cfg.device)
+            gt_sample[(gt_sample<=0) | (torch.isnan(gt_sample))] = 0 #torch.nan
+            gt_true = torch.round(gt_sample.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
             # inference
             masks_pred = model(frame)
@@ -208,7 +204,7 @@ for e in range(cfg.epochs):
                 max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                 gt_true[gt_true==0] = 1e12
                 idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
-                masks_true = torch.gather(gt_samples, -1, idx_values)
+                masks_true = torch.gather(gt_sample, -1, idx_values)
                 loss = loss_mse(masks_pred, masks_true)
             train_loss += loss.item()
             train_step += 1
@@ -221,10 +217,10 @@ for e in range(cfg.epochs):
             # get estimated samples
             if cfg.model.lower() in ('stofnet', 'sincnet'):
                 masks_supp = masks_pred.clone().detach()
-                es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                es_sample = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
             elif cfg.model.lower() == 'zonzini':
                 ideal_threshold = 0
-                es_samples = masks_pred.clone().detach()
+                es_sample = masks_pred.clone().detach()
 
             if cfg.logging:
                 wb.log({
@@ -236,13 +232,13 @@ for e in range(cfg.epochs):
             if cfg.logging and batch_idx%800 == 50:
                 # unravel channel and batch dimension
                 frame = unravel_batch_dim(frame)
-                gt_samples = unravel_batch_dim(gt_samples)
-                es_samples = unravel_batch_dim(es_samples)
+                gt_sample = unravel_batch_dim(gt_sample)
+                es_sample = unravel_batch_dim(es_sample)
                 masks_pred = unravel_batch_dim(masks_pred)
                 masks_true = unravel_batch_dim(masks_true)
 
                 # channel plot
-                fig = plot_channel_overview(frame[0].cpu().numpy(), gt_samples[0].cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                 wb_img_upload(fig, log_key='train_channels')
                 
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
@@ -275,17 +271,17 @@ for e in range(cfg.epochs):
                 
                 # get batch data
                 if cfg.data_dir.lower().__contains__('pala'):
-                    bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+                    bmode, gt_points, frame, gt_sample, pts_pala = batch_data
                     frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                    gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
+                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
                 elif cfg.data_dir.lower().__contains__('chirp'):
-                    envelope_data, rf_data, envelope_gt, rf_gt, gt_samples = batch_data
+                    envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
                     frame = rf_data.float().unsqueeze(1)
-                    gt_samples = gt_samples.unsqueeze(1)
+                    gt_sample = gt_sample.unsqueeze(1)
                 frame = frame.to(cfg.device)
-                gt_samples = gt_samples.to(cfg.device)
-                gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
-                gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
+                gt_sample = gt_sample.to(cfg.device)
+                gt_sample[(gt_sample<=0) | (torch.isnan(gt_sample))] = 0 #torch.nan
+                gt_true = torch.round(gt_sample.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
                 # inference
                 masks_pred = model(frame)
@@ -302,7 +298,7 @@ for e in range(cfg.epochs):
                     gt_true[gt_true==0] = 1e12
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                     idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
-                    masks_true = torch.gather(gt_samples, -1, idx_values)
+                    masks_true = torch.gather(gt_sample, -1, idx_values)
                     loss = loss_mse(masks_pred, masks_true)
                 val_loss += loss.item()
                 val_step += 1
@@ -314,13 +310,13 @@ for e in range(cfg.epochs):
 
                     # get estimated samples
                     masks_supp = masks_pred.clone().detach()
-                    es_samples = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                    es_sample = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() == 'zonzini':
                     ideal_threshold = 0
-                    es_samples = masks_pred.clone().detach()
+                    es_sample = masks_pred.clone().detach()
 
                 # get errors
-                toa_errs = toa_rmse(gt_samples, es_samples, tol=cfg.etol)
+                toa_errs = toa_rmse(gt_sample, es_sample, tol=cfg.etol)
 
                 if cfg.logging:
                     wb.log({
@@ -339,12 +335,12 @@ for e in range(cfg.epochs):
 
                     # unravel channel and batch dimension
                     frame = unravel_batch_dim(frame)
-                    gt_samples = unravel_batch_dim(gt_samples)
-                    es_samples = unravel_batch_dim(es_samples)
+                    gt_sample = unravel_batch_dim(gt_sample)
+                    es_sample = unravel_batch_dim(es_sample)
                     masks_pred = unravel_batch_dim(masks_pred)
                     masks_true = unravel_batch_dim(masks_true)
                     # channel plot
-                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_samples[0].cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='val_channels')
 
                     if cfg.model.lower() in ('stofnet', 'sincnet'):
