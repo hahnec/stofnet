@@ -20,6 +20,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from models import StofNet, ZonziniNetLarge, SincNet
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
+from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
 from utils.gaussian import gaussian_kernel
 from utils.hilbert import hilbert_transform
@@ -50,17 +51,26 @@ else:
     pin_memory = False
 
 # load dataset
-dataset = InSilicoDatasetRf(
-    dataset_path = cfg.data_dir,
-    sequences = cfg.sequences,
-    rescale_factor = cfg.rf_scale_factor,
-    ch_gap = cfg.ch_gap,
-    angle_threshold = cfg.angle_threshold,
-    clutter_db = cfg.clutter_db,
-    temporal_filter_opt=cfg.temporal_filter,
-    pow_law_opt = cfg.pow_law_opt,
-    transforms = torch.nn.Sequential(NormalizeVol()),
+if cfg.data_dir.lower().__contains__('pala'):
+    dataset = InSilicoDatasetRf(
+        dataset_path = cfg.data_dir,
+        sequences = cfg.sequences,
+        rescale_factor = cfg.rf_scale_factor,
+        ch_gap = cfg.ch_gap,
+        angle_threshold = cfg.angle_threshold,
+        clutter_db = cfg.clutter_db,
+        temporal_filter_opt=cfg.temporal_filter,
+        pow_law_opt = cfg.pow_law_opt,
+        transforms = torch.nn.Sequential(NormalizeVol()),
+        )
+elif cfg.data_dir.lower().__contains__('chirp'):
+    dataset = ChirpDataset(
+        root_dir = cfg.data_dir,
+        split_dirname = 'train',
+        rf_scale_factor = cfg.rf_scale_factor,
     )
+else:
+    raise Exception('No dataset class found for given data path')
 
 # wave compounding indices
 angles_list = dataset.get_key('angles_list')

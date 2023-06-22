@@ -8,11 +8,11 @@ from scipy.interpolate import interp1d
 
 
 class ChirpDataset(Dataset):
-    def __init__(self, root_dir, split_dirname='test', rescale_factor=20):
+    def __init__(self, root_dir, split_dirname='test', rf_scale_factor=20):
         
         self.root_dir = Path(root_dir)
         self.split_dirname = split_dirname
-        self.rescale_factor = rescale_factor
+        self.rf_scale_factor = rf_scale_factor
 
         # load sample paths
         self.samples_env, self.samples_iq = self._get_file_paths(str(self.root_dir / self.split_dirname))
@@ -85,8 +85,8 @@ class ChirpDataset(Dataset):
         iq_gt = iq_gt[:, 0] + 1j * iq_gt[:, 1]
 
         # convert to radio-frequency signal
-        rf_data = self.iq2rf(iq_data, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rescale_factor)
-        rf_gt = self.iq2rf(iq_gt, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rescale_factor)
+        rf_data = self.iq2rf(iq_data, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
+        rf_gt = self.iq2rf(iq_gt, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
 
         return envelope_data, rf_data, envelope_gt, rf_gt, sample_position
 
@@ -106,11 +106,11 @@ if __name__ == '__main__':
         envelope_data, rf_data, envelope_gt, rf_gt, sample_position = batch_data
 
         fs = dataset.cfg.fhz_sample
-        rescale_factor = dataset.rescale_factor
+        rf_scale_factor = dataset.rf_scale_factor
         data_len1 = envelope_data.shape[-1]
         data_len2 = rf_gt.shape[-1]
         x = np.linspace(0, data_len1/fs, num=data_len1, endpoint=True)
-        t = np.linspace(0, data_len2/fs/rescale_factor, num=data_len2, endpoint=True)
+        t = np.linspace(0, data_len2/fs/rf_scale_factor, num=data_len2, endpoint=True)
 
         import matplotlib.pyplot as plt
         plt.plot(t, rf_data[0])
@@ -118,5 +118,5 @@ if __name__ == '__main__':
         plt.plot(t, rf_gt[0])
         plt.plot(x, envelope_data[0])
         plt.plot(x, envelope_gt[0])
-        plt.plot([t[(sample_position[0]*rescale_factor).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
+        plt.plot([t[(sample_position[0]*rf_scale_factor).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
         plt.show()
