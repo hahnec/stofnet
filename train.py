@@ -75,7 +75,7 @@ if cfg.data_dir.lower().__contains__('pala'):
     cfg.wavelength = float(dataset.get_key('wavelength'))
 
 elif cfg.data_dir.lower().__contains__('chirp'):
-    # extract data folder from zipdata_dir
+    # extract data folder from zip
     data_path = script_path / cfg.data_dir
     if not data_path.exists():
         with zipfile.ZipFile(str(data_path)+'.zip', 'r') as zip_ref:
