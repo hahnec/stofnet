@@ -11,6 +11,7 @@ import argparse
 import os
 from omegaconf import OmegaConf
 from pathlib import Path
+import zipfile
 import wandb
 import matplotlib.pyplot as plt
 import time
@@ -52,6 +53,7 @@ else:
 
 # load dataset
 if cfg.data_dir.lower().__contains__('pala'):
+    # load dataset
     dataset = InSilicoDatasetRf(
         dataset_path = cfg.data_dir,
         sequences = cfg.sequences,
@@ -63,24 +65,33 @@ if cfg.data_dir.lower().__contains__('pala'):
         pow_law_opt = cfg.pow_law_opt,
         transforms = torch.nn.Sequential(NormalizeVol()),
         )
+    
+    # data-related config
+    angles_list = dataset.get_key('angles_list')
+    wv_idcs = range(len(angles_list))
+    wv_idx = 1
+    cfg.fs = float(dataset.get_key('fs'))
+    cfg.c = float(dataset.get_key('c'))
+    cfg.wavelength = float(dataset.get_key('wavelength'))
+
 elif cfg.data_dir.lower().__contains__('chirp'):
+    # extract data folder from zipdata_dir
+    data_path = script_path / cfg.data_dir
+    if not data_path.exists():
+        with zipfile.ZipFile(str(data_path)+'.zip', 'r') as zip_ref:
+            zip_ref.extractall(data_path.parent)
+    # load dataset
     dataset = ChirpDataset(
-        root_dir = cfg.data_dir,
+        root_dir = data_path,
         split_dirname = 'train',
         rf_scale_factor = cfg.rf_scale_factor,
+        transforms = torch.nn.Sequential(NormalizeVol()),
     )
+    # override collate function
+    collate_fn = None
 else:
     raise Exception('No dataset class found for given data path')
 
-# wave compounding indices
-angles_list = dataset.get_key('angles_list')
-wv_idcs = range(len(angles_list))
-wv_idx = 1
-
-# data-related config
-cfg.fs = float(dataset.get_key('fs'))
-cfg.c = float(dataset.get_key('c'))
-cfg.wavelength = float(dataset.get_key('wavelength'))
 channel_num = dataset.get_channel_num()
 sample_num = dataset.get_sample_num()
 
@@ -169,13 +180,16 @@ for e in range(cfg.epochs):
                 break
 
             # get batch data
-            bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+            if cfg.data_dir.lower().__contains__('pala'):
+                bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+                frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
+                gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
+            elif cfg.data_dir.lower().__contains__('chirp'):
+                envelope_data, rf_data, envelope_gt, rf_gt, gt_samples = batch_data
+                frame = rf_data.float().unsqueeze(1)
+                gt_samples = gt_samples.unsqueeze(1)
             frame = frame.to(cfg.device)
             gt_samples = gt_samples.to(cfg.device)
-
-            # flatten channel and batch dimension
-            frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-            gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
             gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
             gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
@@ -220,7 +234,7 @@ for e in range(cfg.epochs):
                 })
 
             if cfg.logging and batch_idx%800 == 50:
-                # convert mask to samples
+                # unravel channel and batch dimension
                 frame = unravel_batch_dim(frame)
                 gt_samples = unravel_batch_dim(gt_samples)
                 es_samples = unravel_batch_dim(es_samples)
@@ -228,7 +242,7 @@ for e in range(cfg.epochs):
                 masks_true = unravel_batch_dim(masks_true)
 
                 # channel plot
-                fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
+                fig = plot_channel_overview(frame[0].cpu().numpy(), gt_samples[0].cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                 wb_img_upload(fig, log_key='train_channels')
                 
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
@@ -258,15 +272,18 @@ for e in range(cfg.epochs):
     with tqdm(total=len(val_set)) as pbar:
         for batch_idx, batch_data in enumerate(val_loader):
             with torch.no_grad():
-
+                
                 # get batch data
-                bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+                if cfg.data_dir.lower().__contains__('pala'):
+                    bmode, gt_points, frame, gt_samples, pts_pala = batch_data
+                    frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
+                    gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
+                elif cfg.data_dir.lower().__contains__('chirp'):
+                    envelope_data, rf_data, envelope_gt, rf_gt, gt_samples = batch_data
+                    frame = rf_data.float().unsqueeze(1)
+                    gt_samples = gt_samples.unsqueeze(1)
                 frame = frame.to(cfg.device)
                 gt_samples = gt_samples.to(cfg.device)
-
-                # flatten channel and batch dimension
-                frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                gt_samples = gt_samples[:, wv_idx].flatten(0, 1)
                 gt_samples[(gt_samples<=0) | (torch.isnan(gt_samples))] = 0 #torch.nan
                 gt_true = torch.round(gt_samples.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
@@ -320,15 +337,14 @@ for e in range(cfg.epochs):
                         'val_ideal_threshold': ideal_threshold,
                     })
 
-                if cfg.logging and batch_idx%800 == 50:
-                    # convert mask to samples
+                    # unravel channel and batch dimension
                     frame = unravel_batch_dim(frame)
                     gt_samples = unravel_batch_dim(gt_samples)
                     es_samples = unravel_batch_dim(es_samples)
                     masks_pred = unravel_batch_dim(masks_pred)
                     masks_true = unravel_batch_dim(masks_true)
                     # channel plot
-                    fig = plot_channel_overview(frame[0].squeeze().cpu().numpy(), gt_samples[0].squeeze().cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True)
+                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_samples[0].cpu().numpy(), echoes=es_samples[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='val_channels')
 
                     if cfg.model.lower() in ('stofnet', 'sincnet'):

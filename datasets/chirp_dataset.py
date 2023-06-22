@@ -8,11 +8,13 @@ from scipy.interpolate import interp1d
 
 
 class ChirpDataset(Dataset):
-    def __init__(self, root_dir, split_dirname='test', rf_scale_factor=20):
+    def __init__(self, root_dir, split_dirname='test', rf_scale_factor=20, transforms=None):
         
+        # pass inputs to member variables
         self.root_dir = Path(root_dir)
         self.split_dirname = split_dirname
         self.rf_scale_factor = rf_scale_factor
+        self.transforms = transforms
 
         # load sample paths
         self.samples_env, self.samples_iq = self._get_file_paths(str(self.root_dir / self.split_dirname))
@@ -64,6 +66,12 @@ class ChirpDataset(Dataset):
 
         return rf_data.real
 
+    def get_channel_num(self):
+        return 1
+
+    def get_sample_num(self):
+        return len(np.loadtxt(self.gt_iq[0]))
+
     def __len__(self):
         return len(self.gt_positions)
 
@@ -71,14 +79,14 @@ class ChirpDataset(Dataset):
 
         # load data
         envelope_data = np.loadtxt(self.samples_env[idx])
-        iq_data = np.loadtxt(self.samples_iq[idx])
         envelope_gt = np.loadtxt(self.gt_env[idx])
+        iq_data = np.loadtxt(self.samples_iq[idx])
         iq_gt = np.loadtxt(self.gt_iq[idx])
         gt_position = self.gt_positions[idx]
 
         # convert distance to travel time and sample index (GT position is [mm])
         toa = 2*(gt_position*1e-3) / self.cfg.speed_of_sound
-        sample_position = toa * self.cfg.fhz_sample
+        sample_position = toa * self.cfg.fhz_sample * self.rf_scale_factor
 
         # convert to complex numbers
         iq_data = iq_data[:, 0] + 1j * iq_data[:, 1]
@@ -87,6 +95,10 @@ class ChirpDataset(Dataset):
         # convert to radio-frequency signal
         rf_data = self.iq2rf(iq_data, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
         rf_gt = self.iq2rf(iq_gt, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
+
+        if self.transforms:
+            for transform in self.transforms:
+                envelope_data, envelope_gt, iq_data, iq_gt = [transform(data) for data in [envelope_data, envelope_gt, iq_data, iq_gt]]
 
         return envelope_data, rf_data, envelope_gt, rf_gt, sample_position
 
@@ -118,5 +130,5 @@ if __name__ == '__main__':
         plt.plot(t, rf_gt[0])
         plt.plot(x, envelope_data[0])
         plt.plot(x, envelope_gt[0])
-        plt.plot([t[(sample_position[0]*rf_scale_factor).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
+        plt.plot([t[(sample_position[0]).round().int()],]*2, [-.8*rf_data[0].max(), .8*rf_data[0].max()], linestyle='dashed')
         plt.show()
