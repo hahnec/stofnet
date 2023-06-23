@@ -28,6 +28,7 @@ from utils.metrics import toa_rmse
 from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
 from utils.transforms import NormalizeVol, RandomVol
+from utils.collate_fn import collate_fn
 from utils.zip_extract import zip_extract
 
 # load config
