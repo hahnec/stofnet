@@ -11,18 +11,23 @@ def nms_1d(scores, window_size):
     return suppressed
 
 
-def get_maxima_positions(scores, window_size):
+def get_maxima_positions(scores, window_size, threshold=None):
 
-    suppressed = nms_1d(scores, window_size)
+    suppressed = scores.clone().detach()
+    
+    suppressed = nms_1d(suppressed, window_size)
+
+    if threshold: suppressed[suppressed<threshold] = 0
+
     indices = torch.nonzero(suppressed.squeeze(), as_tuple=False).long()
 
     return indices
 
 
-def samples2nested_list(scores, window_size, upsample_factor=1):
+def samples2nested_list(scores, window_size, threshold=None, upsample_factor=1):
     ''' caution: computationally expensive '''
 
-    indices = get_maxima_positions(scores, window_size)
+    indices = get_maxima_positions(scores, window_size, threshold)
 
     helper_list = []
     nested_list = []
@@ -36,11 +41,9 @@ def samples2nested_list(scores, window_size, upsample_factor=1):
     return nested_list
 
 
-def batch_samples2coords(scores, window_size, threshold=.5, upsample_factor=1):
+def batch_samples2coords(scores, window_size, threshold=None, upsample_factor=1):
 
-    scores[scores<threshold] = 0
-
-    indices = get_maxima_positions(scores, window_size)
+    indices = get_maxima_positions(scores, window_size, threshold)
 
     # catch case where no maxima is found
     if indices.numel() == 0:
@@ -66,10 +69,8 @@ def batch_samples2coords(scores, window_size, threshold=.5, upsample_factor=1):
 
 
 def samples2coords(scores, window_size, threshold=None, upsample_factor=1, echo_max=None):
-
-    if threshold: scores[scores<threshold] = 0
     
-    indices = get_maxima_positions(scores, window_size)
+    indices = get_maxima_positions(scores, window_size, threshold)
 
     # catch case where no maxima is found
     if indices.numel() == 0:

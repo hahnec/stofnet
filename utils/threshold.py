@@ -2,17 +2,18 @@ import torch
 import numpy as np
 from sklearn.metrics import roc_curve
 
+from utils.mask2samples import nms_1d
 
-def find_threshold(masks_pred, masks_true, window_size=None):
 
-    if window_size:
-        window_size = window_size//2*2+1
-        max_scores = torch.nn.functional.max_pool1d(masks_pred, window_size, stride=1, padding=(window_size - 1) // 2).squeeze(0)
-        suppressed = (masks_pred == max_scores).float() * masks_pred
-    else:
-        suppressed = masks_pred
+def find_threshold(masks_pred, masks_true):
 
-    fpr, tpr, thresholds = roc_curve(masks_true.float().numpy().flatten(), suppressed.flatten().float().numpy())
+    # normalize prediction
+    masks_norm = masks_pred.detach().clone()
+    masks_norm -= masks_norm.min()
+    masks_norm /= masks_norm.max()
+    
+    # compute ROC curve results
+    fpr, tpr, thresholds = roc_curve(masks_true.float().numpy().flatten(), masks_norm.flatten().float().numpy())
 
     # calculate the g-mean for each threshold
     gmeans = (tpr * (1-fpr))**.5
