@@ -5,6 +5,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data as data_utils
 from torch.utils.data import DataLoader, random_split
+from torchinfo import summary
 from tqdm import tqdm
 import random
 import argparse
@@ -35,7 +36,7 @@ from utils.zip_extract import zip_extract
 script_path = Path(__file__).parent.resolve()
 cfg = OmegaConf.load(str(script_path / 'config.yaml'))
 
-# override config with CLI
+# override loaded config file with CLI arguments
 cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
 
 unravel_batch_dim = lambda x: x.reshape(cfg.batch_size, x.shape[0]//cfg.batch_size, -1)
@@ -163,6 +164,11 @@ zero_l1 = torch.zeros((cfg.batch_size*channel_num, sample_num*cfg.rf_scale_facto
 loss_l1_arg = lambda y: loss_l1(y, zero_l1)
 gauss_kernel_1d = torch.tensor(gaussian_kernel(size=cfg.kernel_size, sigma=cfg.sigma), dtype=torch.float32, device=cfg.device).unsqueeze(0).unsqueeze(0)
 
+# initialze metrics
+total_inference_time = []
+total_distance = []
+total_jaccard = []
+
 # iterate through epochs
 epochs = 1 if cfg.evaluate else cfg.epochs
 for e in range(epochs):
@@ -284,7 +290,9 @@ for e in range(epochs):
                 gt_true = torch.round(gt_sample.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
                 # inference
+                tic = time.process_time()
                 masks_pred = model(frame)
+                toc = time.process_time() - tic
 
                 # validation loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
@@ -326,6 +334,9 @@ for e in range(epochs):
 
                     # evaluation metrics
                     for k, toa_err in enumerate(toa_errs):
+                        total_distance.extend(float(toa_err[0]))
+                        total_jaccard.extend(float(toa_err[3]))
+                        total_inference_time.extend(toc)
                         wb.log({
                             'val_idx': (val_step-1)*cfg.batch_size + k,
                             'val_points': (masks_true>0).sum(),
@@ -336,6 +347,7 @@ for e in range(epochs):
                             'val_toa_true_positive': toa_err[4],
                             'val_toa_false_positive': toa_err[5],
                             'val_toa_false_negative': toa_err[6],
+                            'inference_time': toc,
                         })
 
                     # unravel channel and batch dimension
@@ -366,3 +378,10 @@ for e in range(epochs):
         ckpt_path = script_path / 'ckpts' / (wb.name+'_epoch_'+str(e+1)+'.pth')
         ckpt_path.parent.mkdir(exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
+
+# wandb summary
+model_summary = summary(model)
+wandb.summary['total_distance'] = np.mean(total_distance)
+wandb.summary['total_jaccard'] = np.mean(total_jaccard)
+wandb.summary['total_inference_time'] = np.mean(total_inference_time)
+wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
