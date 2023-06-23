@@ -19,7 +19,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models import StofNet, ZonziniNetLarge, SincNet
+from models import StofNet, ZonziniNetLarge, SincNet, GradPeak
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
@@ -144,18 +144,23 @@ elif cfg.model.lower() == 'sincnet':
                         'use_sinc': True,
                         }
     model = SincNet(sincnet_params)
+elif cfg.model.lower() == 'gradpeak':
+    # non-trainable gradient-based detection
+    model = GradPeak(threshold=cfg.th, rescale_factor=cfg.rf_scale_factor)
+    cfg.evaluate = True
 else:
     raise Exception('Model not recognized')
 
 model = model.to(cfg.device)
 model.eval()
 
-if cfg.model_file:
-    state_dict = torch.load(str(script_path / 'ckpts' / cfg.model_file), map_location=cfg.device)
-    model.load_state_dict(state_dict)
+if not cfg.model.lower() == 'gradpeak':
+    if cfg.model_file:
+        state_dict = torch.load(str(script_path / 'ckpts' / cfg.model_file), map_location=cfg.device)
+        model.load_state_dict(state_dict)
 
-optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
+    optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
 
 # loss settings
 loss_mse = nn.MSELoss(reduction='mean')
@@ -267,6 +272,12 @@ for e in range(epochs):
         scheduler.step()
         torch.cuda.empty_cache()
 
+        # save the model
+        if cfg.logging:
+            ckpt_path = script_path / 'ckpts' / (wb.name+'_epoch_'+str(e+1)+'.pth')
+            ckpt_path.parent.mkdir(exist_ok=True)
+            torch.save(model.state_dict(), ckpt_path)
+
     # validation or test
     model.eval()
     val_loss = 0
@@ -300,6 +311,7 @@ for e in range(epochs):
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                    val_loss += loss.item()
                 elif cfg.model.lower() == 'zonzini':
                     # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
                     gt_true //= cfg.upsample_factor
@@ -308,7 +320,7 @@ for e in range(epochs):
                     idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                     masks_true = torch.gather(gt_sample, -1, idx_values)
                     loss = loss_mse(masks_pred, masks_true)
-                val_loss += loss.item()
+                    val_loss += loss.item()
                 val_step += 1
 
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
@@ -318,7 +330,7 @@ for e in range(epochs):
 
                     # get estimated samples
                     es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
-                elif cfg.model.lower() == 'zonzini':
+                elif cfg.model.lower() in ('zonzini', 'gradpeak'):
                     ideal_th = 0
                     es_sample = masks_pred.clone().detach()
 
@@ -373,15 +385,10 @@ for e in range(epochs):
 
     torch.cuda.empty_cache()
 
-    # save the model
-    if cfg.logging and not cfg.evaluate:
-        ckpt_path = script_path / 'ckpts' / (wb.name+'_epoch_'+str(e+1)+'.pth')
-        ckpt_path.parent.mkdir(exist_ok=True)
-        torch.save(model.state_dict(), ckpt_path)
-
 # wandb summary
-model_summary = summary(model)
-wandb.summary['total_distance'] = np.mean(total_distance)
-wandb.summary['total_jaccard'] = np.mean(total_jaccard)
-wandb.summary['total_inference_time'] = np.mean(total_inference_time)
-wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
+if cfg.logging:
+    model_summary = summary(model)
+    wandb.summary['total_distance'] = np.mean(total_distance)
+    wandb.summary['total_jaccard'] = np.mean(total_jaccard)
+    wandb.summary['total_inference_time'] = np.mean(total_inference_time)
+    wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
