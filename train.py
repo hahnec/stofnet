@@ -217,7 +217,7 @@ for e in range(cfg.epochs):
             # get estimated samples
             if cfg.model.lower() in ('stofnet', 'sincnet'):
                 masks_supp = masks_pred.clone().detach()
-                es_sample = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                es_sample = samples2coords(masks_supp, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
             elif cfg.model.lower() == 'zonzini':
                 ideal_threshold = 0
                 es_sample = masks_pred.clone().detach()
@@ -306,11 +306,11 @@ for e in range(cfg.epochs):
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
                     # estimate ideal threshold
                     max_val = float(masks_true.max())
-                    ideal_threshold = find_threshold(masks_pred.cpu()/max_val, masks_true.cpu()/max_val, window_size=cfg.kernel_size) * max_val
+                    ideal_threshold = find_threshold(masks_pred.cpu()/max_val, masks_true.cpu()/max_val) * max_val
 
                     # get estimated samples
                     masks_supp = masks_pred.clone().detach()
-                    es_sample = samples2coords(masks_supp, window_size=cfg.kernel_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                    es_sample = samples2coords(masks_supp, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() == 'zonzini':
                     ideal_threshold = 0
                     es_sample = masks_pred.clone().detach()
