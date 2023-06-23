@@ -19,6 +19,10 @@ def toa_rmse(gt_samples, es_samples, tol=1):
         gt_valid = remove_invalids(gt_samples[batch_idx])
         es_valid = remove_invalids(es_samples[batch_idx])
 
+        # skip if empty (leave all zero)
+        if gt_valid.numel() == 0 or es_valid.numel() == 0:
+            continue
+
         # replicate estimates to get distances
         distances = abs(gt_valid[:, None] - es_valid[None, :].repeat(gt_valid.shape[-1], 1))
         mins, args = distances.min(-1)

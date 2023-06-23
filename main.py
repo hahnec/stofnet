@@ -55,7 +55,7 @@ if cfg.data_dir.lower().__contains__('pala'):
     # load dataset
     dataset = InSilicoDatasetRf(
         dataset_path = cfg.data_dir,
-        sequences = cfg.sequences,
+        sequences = cfg.sequences if cfg.evaluate else [15, 16, 17, 18, 19],
         rescale_factor = cfg.rf_scale_factor,
         ch_gap = cfg.ch_gap,
         angle_threshold = cfg.angle_threshold,
@@ -80,7 +80,7 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     # load dataset
     dataset = ChirpDataset(
         root_dir = data_path,
-        split_dirname = 'train',
+        split_dirname = 'test' if cfg.evaluate else 'train',
         rf_scale_factor = cfg.rf_scale_factor,
         transforms = torch.nn.Sequential(NormalizeVol()),
     )
@@ -93,7 +93,7 @@ channel_num = dataset.get_channel_num()
 sample_num = dataset.get_sample_num()
 
 # split into train / validation partitions
-val_percent = 0.2
+val_percent = 1 if cfg.evaluate else 0.2
 n_val = int(len(dataset) * val_percent)
 n_train = len(dataset) - n_val
 train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Generator().manual_seed(cfg.seed))
@@ -101,7 +101,7 @@ train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Gen
 # create data loaders
 num_workers = min(4, os.cpu_count())
 loader_args = dict(batch_size=cfg.batch_size, num_workers=num_workers, pin_memory=pin_memory)
-train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args)
+train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args) if not cfg.evaluate else None
 val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
 
 # instantiate logging
@@ -112,15 +112,14 @@ if cfg.logging:
     wandb.define_metric('train_points', step_metric='train_step')
     wandb.define_metric('val_loss', step_metric='val_step')
     wandb.define_metric('val_points', step_metric='val_step')
-    wandb.define_metric('val_toa_distance', step_metric='val_step')
-    wandb.define_metric('val_toa_precision', step_metric='val_step')
-    wandb.define_metric('val_toa_recall', step_metric='val_step')
-    wandb.define_metric('val_toa_jaccard', step_metric='val_step')
-    wandb.define_metric('val_toa_true_positive', step_metric='val_step')
-    wandb.define_metric('val_toa_false_positive', step_metric='val_step')
-    wandb.define_metric('val_toa_false_negative', step_metric='val_step')
-    wandb.define_metric('val_toa_false_negative', step_metric='val_step')
     wandb.define_metric('val_ideal_threshold', step_metric='val_step')
+    wandb.define_metric('val_toa_distance', step_metric='val_idx')
+    wandb.define_metric('val_toa_precision', step_metric='val_idx')
+    wandb.define_metric('val_toa_recall', step_metric='val_idx')
+    wandb.define_metric('val_toa_jaccard', step_metric='val_idx')
+    wandb.define_metric('val_toa_true_positive', step_metric='val_idx')
+    wandb.define_metric('val_toa_false_positive', step_metric='val_idx')
+    wandb.define_metric('val_toa_false_negative', step_metric='val_idx')
     wandb.define_metric('lr', step_metric='epoch')
 
 # load model
@@ -164,107 +163,108 @@ zero_l1 = torch.zeros((cfg.batch_size*channel_num, sample_num*cfg.rf_scale_facto
 loss_l1_arg = lambda y: loss_l1(y, zero_l1)
 gauss_kernel_1d = torch.tensor(gaussian_kernel(size=cfg.kernel_size, sigma=cfg.sigma), dtype=torch.float32, device=cfg.device).unsqueeze(0).unsqueeze(0)
 
-train_step = 0
-val_step = 0
-for e in range(cfg.epochs):
-    train_loss = 0
-    val_loss = 0
-    pbar_update = cfg.batch_size
-    model.train()
-    with tqdm(total=len(train_set)) as pbar:
-        for batch_idx, batch_data in enumerate(train_loader):
-            if cfg.evaluate:
-                break
+# iterate through epochs
+epochs = 1 if cfg.evaluate else cfg.epochs
+for e in range(epochs):
+    if not cfg.evaluate:
+        # train
+        model.train()
+        train_loss = 0
+        train_step = 0
+        with tqdm(total=len(train_set)) as pbar:
+            for batch_idx, batch_data in enumerate(train_loader):
 
-            # get batch data
-            if cfg.data_dir.lower().__contains__('pala'):
-                bmode, gt_points, frame, gt_sample, pts_pala = batch_data
-                frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
-            elif cfg.data_dir.lower().__contains__('chirp'):
-                envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
-                frame = rf_data.float().unsqueeze(1)
-                gt_sample = gt_sample.unsqueeze(1)
-            frame = frame.to(cfg.device)
-            gt_sample = gt_sample.to(cfg.device)
-            gt_sample[(gt_sample<=0) | (torch.isnan(gt_sample))] = 0 #torch.nan
-            gt_true = torch.round(gt_sample.clone().unsqueeze(1)*cfg.upsample_factor).long()
+                # get batch data
+                if cfg.data_dir.lower().__contains__('pala'):
+                    bmode, gt_points, frame, gt_sample, pts_pala = batch_data
+                    frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
+                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
+                elif cfg.data_dir.lower().__contains__('chirp'):
+                    envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
+                    frame = rf_data.float().unsqueeze(1)
+                    gt_sample = gt_sample.unsqueeze(1)
+                frame = frame.to(cfg.device)
+                gt_sample = gt_sample.to(cfg.device)
+                gt_sample[(gt_sample<=0) | (torch.isnan(gt_sample))] = 0 #torch.nan
+                gt_true = torch.round(gt_sample.clone().unsqueeze(1)*cfg.upsample_factor).long()
 
-            # inference
-            masks_pred = model(frame)
+                # inference
+                masks_pred = model(frame)
 
-            # train loss
-            if cfg.model.lower() in ('stofnet', 'sincnet'):
-                masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
-                masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
-            elif cfg.model.lower() == 'zonzini':
-                # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
-                gt_true //= cfg.upsample_factor
-                max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
-                gt_true[gt_true==0] = 1e12
-                idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
-                masks_true = torch.gather(gt_sample, -1, idx_values)
-                loss = loss_mse(masks_pred, masks_true)
-            train_loss += loss.item()
-            train_step += 1
-
-            # back-propagate
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
-            # get estimated samples
-            if cfg.model.lower() in ('stofnet', 'sincnet'):
-                es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
-            elif cfg.model.lower() == 'zonzini':
-                ideal_threshold = 0
-                es_sample = masks_pred.clone().detach()
-
-            if cfg.logging:
-                wb.log({
-                    'train_loss': loss.item(),
-                    'train_step': train_step,
-                    'train_points': (masks_true>0).sum(),
-                })
-
-            if cfg.logging and batch_idx%800 == 50:
-                # unravel channel and batch dimension
-                frame = unravel_batch_dim(frame)
-                gt_sample = unravel_batch_dim(gt_sample)
-                es_sample = unravel_batch_dim(es_sample)
-                masks_pred = unravel_batch_dim(masks_pred)
-                masks_true = unravel_batch_dim(masks_true)
-
-                # channel plot
-                fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
-                wb_img_upload(fig, log_key='train_channels')
-                
+                # train loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    # image frame plot
-                    fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-                    axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                    axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                    plt.tight_layout()
-                    wb_img_upload(fig, log_key='train_frames')
-                    plt.close('all')
+                    masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                    masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                    masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
+                    loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                elif cfg.model.lower() == 'zonzini':
+                    # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    gt_true //= cfg.upsample_factor
+                    max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
+                    gt_true[gt_true==0] = 1e12
+                    idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
+                    masks_true = torch.gather(gt_sample, -1, idx_values)
+                    loss = loss_mse(masks_pred, masks_true)
+                train_loss += loss.item()
+                train_step += 1
 
-            pbar.update(pbar_update)
+                # back-propagate
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-    train_loss = train_loss / len(train_set)
+                # get estimated samples
+                if cfg.model.lower() in ('stofnet', 'sincnet'):
+                    es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                elif cfg.model.lower() == 'zonzini':
+                    ideal_th = 0
+                    es_sample = masks_pred.clone().detach()
 
-    if cfg.logging:
-        wb.log({
-            'lr': optimizer.param_groups[0]['lr'],
-            'epoch': e,
-        })
+                if cfg.logging:
+                    wb.log({
+                        'train_loss': loss.item(),
+                        'train_step': train_step,
+                        'train_points': (masks_true>0).sum(),
+                    })
 
-    if not cfg.evaluate: scheduler.step()
-    torch.cuda.empty_cache()
+                if cfg.logging and batch_idx%800 == 50:
+                    # unravel channel and batch dimension
+                    frame = unravel_batch_dim(frame)
+                    gt_sample = unravel_batch_dim(gt_sample)
+                    es_sample = unravel_batch_dim(es_sample)
+                    masks_pred = unravel_batch_dim(masks_pred)
+                    masks_true = unravel_batch_dim(masks_true)
 
-    # Validation
+                    # channel plot
+                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                    wb_img_upload(fig, log_key='train_channels')
+                    
+                    if cfg.model.lower() in ('stofnet', 'sincnet'):
+                        # image frame plot
+                        fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+                        axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                        axs[1].imshow(masks_true.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                        plt.tight_layout()
+                        wb_img_upload(fig, log_key='train_frames')
+                        plt.close('all')
+
+                pbar.update(cfg.batch_size)
+
+        train_loss = train_loss / len(train_set)
+
+        if cfg.logging:
+            wb.log({
+                'lr': optimizer.param_groups[0]['lr'],
+                'epoch': e,
+            })
+
+        scheduler.step()
+        torch.cuda.empty_cache()
+
+    # validation or test
     model.eval()
+    val_loss = 0
+    val_step = 0
     with tqdm(total=len(val_set)) as pbar:
         for batch_idx, batch_data in enumerate(val_loader):
             with torch.no_grad():
@@ -306,12 +306,12 @@ for e in range(cfg.epochs):
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
                     # estimate ideal threshold
                     max_val = float(masks_true.max())
-                    ideal_threshold = find_threshold(masks_pred.cpu(), masks_true.cpu()/max_val) * max_val
+                    ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu()/max_val) * max_val
 
                     # get estimated samples
-                    es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                    es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() == 'zonzini':
-                    ideal_threshold = 0
+                    ideal_th = 0
                     es_sample = masks_pred.clone().detach()
 
                 # get errors
@@ -321,16 +321,22 @@ for e in range(cfg.epochs):
                     wb.log({
                         'val_loss': loss.item(),
                         'val_step': val_step,
-                        'val_points': (masks_true>0).sum(),
-                        'val_toa_distance': torch.nanmean(toa_errs[0]),
-                        'val_toa_precision': torch.nanmean(toa_errs[1]),
-                        'val_toa_recall': torch.nanmean(toa_errs[2]),
-                        'val_toa_jaccard': torch.nanmean(toa_errs[3]),
-                        'val_toa_true_positive': torch.nanmean(toa_errs[4]),
-                        'val_toa_false_positive': torch.nanmean(toa_errs[5]),
-                        'val_toa_false_negative': torch.nanmean(toa_errs[6]),
-                        'val_ideal_threshold': ideal_threshold,
+                        'val_ideal_threshold': ideal_th,
                     })
+
+                    # evaluation metrics
+                    for k, toa_err in enumerate(toa_errs):
+                        wb.log({
+                            'val_idx': (val_step-1)*cfg.batch_size + k,
+                            'val_points': (masks_true>0).sum(),
+                            'val_toa_distance': toa_err[0],
+                            'val_toa_precision': toa_err[1],
+                            'val_toa_recall': toa_err[2],
+                            'val_toa_jaccard': toa_err[3],
+                            'val_toa_true_positive': toa_err[4],
+                            'val_toa_false_positive': toa_err[5],
+                            'val_toa_false_negative': toa_err[6],
+                        })
 
                     # unravel channel and batch dimension
                     frame = unravel_batch_dim(frame)
@@ -351,12 +357,12 @@ for e in range(cfg.epochs):
                         wb_img_upload(fig, log_key='val_frames')
                         plt.close('all')
 
-                pbar.update(pbar_update)
+                pbar.update(cfg.batch_size)
 
     torch.cuda.empty_cache()
 
     # save the model
-    if cfg.logging:
+    if cfg.logging and not cfg.evaluate:
         ckpt_path = script_path / 'ckpts' / (wb.name+'_epoch_'+str(e+1)+'.pth')
         ckpt_path.parent.mkdir(exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
