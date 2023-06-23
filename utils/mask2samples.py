@@ -65,9 +65,9 @@ def batch_samples2coords(scores, window_size, threshold=.5, upsample_factor=1):
     return coords
 
 
-def samples2coords(scores, window_size, threshold=.5, upsample_factor=1, echo_max=None):
+def samples2coords(scores, window_size, threshold=None, upsample_factor=1, echo_max=None):
 
-    scores[scores<threshold] = 0
+    if threshold: scores[scores<threshold] = 0
     
     indices = get_maxima_positions(scores, window_size)
 
