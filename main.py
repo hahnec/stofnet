@@ -56,7 +56,7 @@ if cfg.data_dir.lower().__contains__('pala'):
     # load dataset
     dataset = InSilicoDatasetRf(
         dataset_path = cfg.data_dir,
-        sequences = cfg.sequences if cfg.evaluate else [15, 16, 17, 18, 19],
+        sequences = cfg.sequences,
         rescale_factor = cfg.rf_scale_factor,
         ch_gap = cfg.ch_gap,
         angle_threshold = cfg.angle_threshold,
