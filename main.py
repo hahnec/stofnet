@@ -176,12 +176,12 @@ total_jaccard = []
 
 # iterate through epochs
 epochs = 1 if cfg.evaluate else cfg.epochs
+train_step, val_step = 0, 0
 for e in range(epochs):
     if not cfg.evaluate:
         # train
         model.train()
         train_loss = 0
-        train_step = 0
         with tqdm(total=len(train_set)) as pbar:
             for batch_idx, batch_data in enumerate(train_loader):
 
@@ -281,7 +281,6 @@ for e in range(epochs):
     # validation or test
     model.eval()
     val_loss = 0
-    val_step = 0
     with tqdm(total=len(val_set)) as pbar:
         for batch_idx, batch_data in enumerate(val_loader):
             with torch.no_grad():
