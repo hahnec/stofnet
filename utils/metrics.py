@@ -38,4 +38,4 @@ def toa_rmse(gt_samples, es_samples, tol=1):
     precisions = tps/(fps+tps) * 100
     recalls = tps/(fns+tps) * 100
 
-    return mes, precisions, recalls, jaccards, tps, fps, fns
+    return torch.stack([mes, precisions, recalls, jaccards, tps, fps, fns])

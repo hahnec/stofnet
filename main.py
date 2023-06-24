@@ -345,7 +345,7 @@ for e in range(epochs):
                     })
 
                     # evaluation metrics
-                    for k in range(toa_errs[0]):
+                    for k in range(toa_errs.shape[-1]):
                         total_distance.append(float(toa_err[0][k]))
                         total_jaccard.append(float(toa_err[3][k]))
                         total_inference_time.append(toc/gt_sample.shape[0])
