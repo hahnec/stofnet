@@ -113,6 +113,7 @@ if cfg.logging:
     wandb.define_metric('val_loss', step_metric='val_step')
     wandb.define_metric('val_points', step_metric='val_step')
     wandb.define_metric('val_ideal_threshold', step_metric='val_step')
+    wandb.define_metric('inference_time', step_metric='val_step')
     wandb.define_metric('val_toa_distance', step_metric='val_idx')
     wandb.define_metric('val_toa_precision', step_metric='val_idx')
     wandb.define_metric('val_toa_recall', step_metric='val_idx')
@@ -232,8 +233,8 @@ for e in range(epochs):
 
                 if cfg.logging:
                     wb.log({
-                        'train_loss': loss.item(),
                         'train_step': train_step,
+                        'train_loss': loss.item(),
                         'train_points': (masks_true>0).sum(),
                     })
 
@@ -337,27 +338,27 @@ for e in range(epochs):
 
                 if cfg.logging:
                     wb.log({
-                        'val_loss': loss.item(),
                         'val_step': val_step,
+                        'val_loss': loss.item(),
                         'val_ideal_threshold': ideal_th,
+                        'inference_time': toc/gt_sample.shape[0],
                     })
 
                     # evaluation metrics
-                    for k, toa_err in enumerate(toa_errs):
-                        total_distance.append(float(toa_err[0]))
-                        total_jaccard.append(float(toa_err[3]))
-                        total_inference_time.append(toc)
+                    for k in range(toa_errs[0]):
+                        total_distance.append(float(toa_err[0][k]))
+                        total_jaccard.append(float(toa_err[3][k]))
+                        total_inference_time.append(toc/gt_sample.shape[0])
                         wb.log({
-                            'val_idx': (val_step-1)*cfg.batch_size + k,
+                            'val_idx': (val_step-1)*cfg.batch_size*channel_num + k,
                             'val_points': (masks_true>0).sum(),
-                            'val_toa_distance': toa_err[0],
-                            'val_toa_precision': toa_err[1],
-                            'val_toa_recall': toa_err[2],
-                            'val_toa_jaccard': toa_err[3],
-                            'val_toa_true_positive': toa_err[4],
-                            'val_toa_false_positive': toa_err[5],
-                            'val_toa_false_negative': toa_err[6],
-                            'inference_time': toc,
+                            'val_toa_distance': toa_err[0][k],
+                            'val_toa_precision': toa_err[1][k],
+                            'val_toa_recall': toa_err[2][k],
+                            'val_toa_jaccard': toa_err[3][k],
+                            'val_toa_true_positive': toa_err[4][k],
+                            'val_toa_false_positive': toa_err[5][k],
+                            'val_toa_false_negative': toa_err[6][k],
                         })
 
                     # unravel channel and batch dimension
