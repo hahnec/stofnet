@@ -346,9 +346,9 @@ for e in range(epochs):
 
                     # evaluation metrics
                     for k, toa_err in enumerate(toa_errs):
-                        total_distance.extend(float(toa_err[0]))
-                        total_jaccard.extend(float(toa_err[3]))
-                        total_inference_time.extend(toc)
+                        total_distance.append(float(toa_err[0]))
+                        total_jaccard.append(float(toa_err[3]))
+                        total_inference_time.append(toc)
                         wb.log({
                             'val_idx': (val_step-1)*cfg.batch_size + k,
                             'val_points': (masks_true>0).sum(),
