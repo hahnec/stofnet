@@ -22,7 +22,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from models import StofNet, ZonziniNetLarge, SincNet, GradPeak
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from datasets.chirp_dataset import ChirpDataset
-from utils.mask2samples import samples2mask, samples2nested_list, samples2coords
+from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
 from utils.gaussian import gaussian_kernel
 from utils.hilbert import hilbert_transform
 from utils.metrics import toa_rmse
@@ -204,7 +204,7 @@ for e in range(epochs):
 
                 # train loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                    masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
@@ -226,7 +226,7 @@ for e in range(epochs):
 
                 # get estimated samples
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() == 'zonzini':
                     ideal_th = 0
                     es_sample = masks_pred.clone().detach()
@@ -306,7 +306,7 @@ for e in range(epochs):
 
                 # validation loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    masks_true = samples2mask(gt_true, masks_pred) * cfg.mask_amplitude
+                    masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
@@ -328,7 +328,7 @@ for e in range(epochs):
                     ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu()/max_val) * max_val
 
                     # get estimated samples
-                    es_sample = samples2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
+                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
                 elif cfg.model.lower() in ('zonzini', 'gradpeak'):
                     ideal_th = 0
                     es_sample = masks_pred.clone().detach()

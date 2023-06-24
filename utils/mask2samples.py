@@ -24,7 +24,7 @@ def get_maxima_positions(scores, window_size, threshold=None):
     return indices
 
 
-def samples2nested_list(scores, window_size, threshold=None, upsample_factor=1):
+def mask2nested_list(scores, window_size, threshold=None, upsample_factor=1):
     ''' caution: computationally expensive '''
 
     indices = get_maxima_positions(scores, window_size, threshold)
@@ -41,7 +41,7 @@ def samples2nested_list(scores, window_size, threshold=None, upsample_factor=1):
     return nested_list
 
 
-def batch_samples2coords(scores, window_size, threshold=None, upsample_factor=1):
+def batch_mask2coords(scores, window_size, threshold=None, upsample_factor=1):
 
     indices = get_maxima_positions(scores, window_size, threshold)
 
@@ -68,7 +68,7 @@ def batch_samples2coords(scores, window_size, threshold=None, upsample_factor=1)
     return coords
 
 
-def samples2coords(scores, window_size, threshold=None, upsample_factor=1, echo_max=None):
+def mask2coords(scores, window_size, threshold=None, upsample_factor=1, echo_max=None):
     
     indices = get_maxima_positions(scores, window_size, threshold)
 
@@ -123,7 +123,7 @@ def get_amplitudes(frames, samples):
     return torch.gather(frames.squeeze(), -1, torch.round(samples).long())
 
 
-def samples2mask(samples, ref):
+def coords2mask(samples, ref):
     
     empty_mask = torch.zeros_like(ref)
     samples[samples<0] = 0
