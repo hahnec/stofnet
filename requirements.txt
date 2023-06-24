@@ -9,5 +9,5 @@ urllib3<2.0
 natsort
 scipy
 scikit-learn
-
 scikit-image
+torchinfo
