@@ -313,10 +313,10 @@ for e in range(epochs):
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                     val_loss += loss.item()
                 elif cfg.model.lower() == 'zonzini':
-                    # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    # pick first ToA sample or maximum echo (Zonzini's model detects single echoes)
                     gt_true //= cfg.upsample_factor
-                    gt_true[gt_true==0] = 1e12
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
+                    gt_true[gt_true==0] = 1e12
                     idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
                     masks_true = torch.gather(gt_sample, -1, idx_values)
                     loss = loss_mse(masks_pred, masks_true)
@@ -388,7 +388,8 @@ for e in range(epochs):
 # wandb summary
 if cfg.logging:
     model_summary = summary(model)
-    wandb.summary['total_distance'] = np.mean(total_distance)
+    wandb.summary['total_distance_mean'] = np.mean(total_distance)
+    wandb.summary['total_distance_std'] = np.std(total_distance)
     wandb.summary['total_jaccard'] = np.mean(total_jaccard)
     wandb.summary['total_inference_time'] = np.mean(total_inference_time)
     wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
