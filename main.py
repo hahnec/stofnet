@@ -106,7 +106,7 @@ val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last
 
 # instantiate logging
 if cfg.logging:
-    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg)
+    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg, group=cfg.logging)
     wb.config.update(dict(epochs=cfg.epochs, batch_size=cfg.batch_size, learning_rate=cfg.lr, val_percent=val_percent))
     wandb.define_metric('train_loss', step_metric='train_step')
     wandb.define_metric('train_points', step_metric='train_step')
