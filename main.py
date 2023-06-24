@@ -204,12 +204,16 @@ for e in range(epochs):
 
                 # train loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
+                    # get estimated samples
+                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
+                    # loss computation
                     masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 elif cfg.model.lower() == 'zonzini':
-                    # pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    es_sample = masks_pred.clone().detach()
                     gt_true //= cfg.upsample_factor
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                     gt_true[gt_true==0] = 1e12
@@ -223,13 +227,6 @@ for e in range(epochs):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-                # get estimated samples
-                if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
-                elif cfg.model.lower() == 'zonzini':
-                    ideal_th = 0
-                    es_sample = masks_pred.clone().detach()
 
                 if cfg.logging:
                     wb.log({
@@ -306,13 +303,23 @@ for e in range(epochs):
 
                 # validation loss
                 if cfg.model.lower() in ('stofnet', 'sincnet'):
+                    # get estimated samples
+                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
+                    # loss computation
                     masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
                     loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                     val_loss += loss.item()
-                elif cfg.model.lower() == 'zonzini':
-                    # pick first ToA sample or maximum echo (Zonzini's model detects single echoes)
+                    
+                    # estimate ideal threshold
+                    max_val = float(masks_true.max())
+                    ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu()/max_val) * max_val
+
+                elif cfg.model.lower() in ('zonzini', 'gradpeak'):
+                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detects single echoes)
+                    es_sample = masks_pred.clone().detach()
+                    # loss computation
                     gt_true //= cfg.upsample_factor
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                     gt_true[gt_true==0] = 1e12
@@ -320,18 +327,8 @@ for e in range(epochs):
                     masks_true = torch.gather(gt_sample, -1, idx_values)
                     loss = loss_mse(masks_pred, masks_true)
                     val_loss += loss.item()
-                val_step += 1
-
-                if cfg.model.lower() in ('stofnet', 'sincnet'):
-                    # estimate ideal threshold
-                    max_val = float(masks_true.max())
-                    ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu()/max_val) * max_val
-
-                    # get estimated samples
-                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
-                elif cfg.model.lower() in ('zonzini', 'gradpeak'):
                     ideal_th = 0
-                    es_sample = masks_pred.clone().detach()
+                val_step += 1
 
                 # get errors
                 toa_errs = toa_rmse(gt_sample, es_sample, tol=cfg.etol)
@@ -345,20 +342,20 @@ for e in range(epochs):
                     })
 
                     # evaluation metrics
-                    for k in range(toa_errs.shape[-1]):
-                        total_distance.append(float(toa_err[0][k]))
-                        total_jaccard.append(float(toa_err[3][k]))
+                    for k, toa_err in enumerate(toa_errs):
+                        total_distance.append(float(toa_err[0]))
+                        total_jaccard.append(float(toa_err[3]))
                         total_inference_time.append(toc/gt_sample.shape[0])
                         wb.log({
                             'val_idx': (val_step-1)*cfg.batch_size*channel_num + k,
                             'val_points': (masks_true>0).sum(),
-                            'val_toa_distance': toa_err[0][k],
-                            'val_toa_precision': toa_err[1][k],
-                            'val_toa_recall': toa_err[2][k],
-                            'val_toa_jaccard': toa_err[3][k],
-                            'val_toa_true_positive': toa_err[4][k],
-                            'val_toa_false_positive': toa_err[5][k],
-                            'val_toa_false_negative': toa_err[6][k],
+                            'val_toa_distance': toa_err[0],
+                            'val_toa_precision': toa_err[1],
+                            'val_toa_recall': toa_err[2],
+                            'val_toa_jaccard': toa_err[3],
+                            'val_toa_true_positive': toa_err[4],
+                            'val_toa_false_positive': toa_err[5],
+                            'val_toa_false_negative': toa_err[6],
                         })
 
                     # unravel channel and batch dimension
