@@ -1,7 +1,5 @@
 import wandb
 
-#wb = wandb.init()#project='StofNet', entity='hahnec', resume=True)
-
 runs = wandb.Api().runs("StofNet")
 
 # Sort the runs by creation time (most recent first)
