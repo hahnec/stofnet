@@ -384,6 +384,7 @@ for e in range(epochs):
 # wandb summary
 if cfg.logging:
     model_summary = summary(model)
+    wandb.summary['model_name'] = cfg.model
     wandb.summary['total_distance_mean'] = np.mean(total_distance)
     wandb.summary['total_distance_std'] = np.std(total_distance)
     wandb.summary['total_jaccard'] = np.mean(total_jaccard)

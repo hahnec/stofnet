@@ -125,7 +125,7 @@ class GradPeak(torch.nn.Module):
     def forward(self, x):
         
         # get echoes as start, peak and amplitude in that order of last dimension
-        echoes = self._fun(x.squeeze())
+        echoes = self._fun(x.squeeze(1))
         
         # return peaks
         return echoes[..., 1]
