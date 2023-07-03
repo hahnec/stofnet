@@ -24,11 +24,11 @@ def toa_rmse(gt_samples, es_samples, tol=1):
             continue
 
         # replicate estimates to get distances
-        distances = abs(gt_valid[:, None] - es_valid[None, :].repeat(gt_valid.shape[-1], 1))
+        distances = (gt_valid[:, None] - es_valid[None, :].repeat(gt_valid.shape[-1], 1))**2
         mins, args = distances.min(-1)
 
         # compute metrics
-        mes[batch_idx] = torch.mean(mins[mins<=tol], dim=-1)
+        mes[batch_idx] = torch.mean(mins[mins<=tol], dim=-1)**.5
         tps[batch_idx] = (mins <=tol).sum(-1).float()
         fns[batch_idx] = (mins > tol).sum(-1).float()
         fps[batch_idx] = es_valid.shape[-1] - tps[batch_idx]
