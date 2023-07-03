@@ -12,7 +12,7 @@ recent_runs = sorted_runs[:num_recent_runs]
 ndigits = 4
 metric_runs = []
 for metric_run in recent_runs:
-    model_name = metric_run.summary['model'] if 'model' in metric_run.summary.keys() else None
+    model_name = metric_run.summary['model_name'] if 'model_name' in metric_run.summary.keys() else None
     total_dist_mean = metric_run.summary['total_distance_mean']
     total_dist_std = metric_run.summary['total_distance_std']
     total_time = metric_run.summary['total_inference_time'] * 1e3
