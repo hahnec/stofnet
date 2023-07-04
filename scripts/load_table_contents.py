@@ -16,32 +16,33 @@ for metric_run in recent_runs:
     total_dist_mean = metric_run.summary['total_distance_mean']
     total_dist_std = metric_run.summary['total_distance_std']
     total_time = metric_run.summary['total_inference_time'] * 1e3
-    total_params = metric_run.summary['total_parameters']
+    total_params = metric_run.summary['total_parameters'] / 1e3
     total_jaccard = metric_run.summary['total_jaccard']
     # replace None with '-'
 
-    model_name, total_dist_mean, total_dist_std, total_time, total_params, total_jaccard = [round(el, ndigits) if isinstance(el, (float, int)) else el for el in [model_name, total_dist_mean, total_dist_std, total_time, total_params, total_jaccard]]
-    row_list = [str(model_name), str(total_params), str(total_dist_mean)+' $\pm$ '+str(total_dist_std), str(total_jaccard), str(total_time)]
+    fmt = '.'+str(ndigits)+'f'
+    model_name, total_dist_avg, total_dist_std, total_time, total_params, total_jaccard = [format(round(el, ndigits), fmt) if isinstance(el, (float, int)) else el for el in [model_name, total_dist_mean, total_dist_std, total_time, total_params, total_jaccard]]
+    row_list = [str(model_name), str(total_params).split('.')[0], str(total_dist_avg)+' $\pm$ '+str(total_dist_std), str(total_jaccard), str(total_time)]
     metric_runs.append(row_list)
 
 with open("metrics_table.tex", "w") as f:
     # Write the LaTeX table header
     f.write("\\begin{tabularx}{\linewidth}{ \n \
-        |>{\centering\\arraybackslash}p{5em} \n \
-        |>{\centering\\arraybackslash}p{3em} \n \
-        |>{\centering\\arraybackslash}p{6em} \n \
-        |>{\centering\\arraybackslash}p{3em} \n \
-        |>{\centering\\arraybackslash}p{3em} \n \
-        |}\n")
-    f.write("\\cline{1-5}\n")
-    f.write("Model & Weights [\#] & RMSE [Sample] & Jaccard [\%] & Time [ms] \\\\\n")
-    f.write("\\cline{1-5}\n")
+        >{\\raggedright\\arraybackslash}p{4.9em} %| \n \
+        >{\\raggedleft\\arraybackslash}p{2.8em} %| \n \
+        >{\centering\\arraybackslash}p{5.76em} %| \n \
+        S[table-format=2.3] %| \n \
+        >{\centering\\arraybackslash}p{2em} %| \n \
+        }\n")
+    f.write("\\toprule\n")
+    f.write("\centering Model & \centering Weights [k\#] & {RMSE [Sample]} & {Jaccard~[\%]} & Time [ms] \\\\\n")
+    f.write("\\midrule\n")
 
     # Iterate over the runs and extract metrics
     for k, row_list in enumerate(metric_runs):
         
         # replace model entry
-        row_list[0] = ['Gradient \cite{Hahne:22}', 'Zonzini \cite{Zonzini:2022}', 'SincNet \cite{ravanelli2018speaker}', 'Ours'][k]
+        row_list[0] = ['Gradient~\cite{Hahne:22}', 'Zonzini~\cite{Zonzini:2022}', 'SincNet~\cite{ravanelli2018speaker}', 'Ours'][k]
 
         # replace None entries
         row_list = [col.replace('None', 'n.a.') for col in row_list]
@@ -51,7 +52,7 @@ with open("metrics_table.tex", "w") as f:
         f.write(" \\\\\n")
 
     # Write the LaTeX table footer
-    f.write("\\cline{1-5}\n")
+    f.write("\\bottomrule\n")
     f.write("\\end{tabularx}")
 
 artifact = None
