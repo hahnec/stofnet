@@ -370,7 +370,7 @@ for e in range(epochs):
                     fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='val_channels')
 
-                    if cfg.model.lower() in ('stofnet', 'sincnet'):
+                    if cfg.model.lower() in ('stofnet', 'sincnet', 'tfilm'):
                         # image frame plot
                         fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                         axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
@@ -387,8 +387,8 @@ for e in range(epochs):
 if cfg.logging:
     model_summary = summary(model)
     wandb.summary['model_name'] = cfg.model
-    wandb.summary['total_distance_mean'] = np.nanmean(total_distance)
-    wandb.summary['total_distance_std'] = np.std(total_distance[~np.isnan(total_distance)])
+    wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
     wandb.summary['total_jaccard'] = np.nanmean(total_jaccard)
     wandb.summary['total_inference_time'] = np.nanmean(total_inference_time)
-    wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
+    wandb.summary['total_distance_mean'] = np.nanmean(total_distance)
+    wandb.summary['total_distance_std'] = np.std(np.array(total_distance)[~np.isnan(total_distance)])
