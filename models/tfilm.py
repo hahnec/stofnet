@@ -50,21 +50,13 @@ class TFiLM(nn.Module):
         n_filtersizes = [65, 33, 17, 9, 9, 9, 9, 9, 9]
 
         # Downsampling layers
-        self.conv_before = []
         for i, (l, nf, fs) in enumerate(zip(list(range(num_layers)), n_filters, n_filtersizes)):
             if i == 0:
-                conv = nn.Conv1d(1, nf, fs, stride=2)
-                bn = nn.BatchNorm1d(nf)
-                do = nn.Dropout(p=0.1)
+                setattr(self, f'down_conv{i}', nn.Conv1d(1, nf, fs, stride=2))
             else:
-                conv = nn.Conv1d(n_filters[i - 1], nf, fs, stride=2)
-                bn = nn.BatchNorm1d(nf)
-                do = nn.Dropout(p=0.1)
-            # ATTENTION: NOT CROSS PLATFORM- CHANGE TO TO(DEVICE)
-            #conv.cuda()
-            #bn.cuda()
-            #do.cuda()
-            self.conv_before.append((conv, bn, do))
+                setattr(self, f'down_conv{i}', nn.Conv1d(n_filters[i - 1], nf, fs, stride=2))
+            setattr(self, f'down_bn{i}', nn.BatchNorm1d(nf))
+            setattr(self, f'down_do{i}', nn.Dropout(p=0.1))
 
         # bottleneck layer
         self.bottleneck = nn.Conv1d(n_filters[-1], n_filters[-1], n_filtersizes[-1], stride=2)#.to(device)
@@ -73,24 +65,16 @@ class TFiLM(nn.Module):
         # x = LeakyReLU(0.2)(x)
 
         # upsampling layers
-        self.up_convs = []
         for i, (l, nf, fs) in enumerate(reversed(list(zip(
                 range(num_layers), n_filters, n_filtersizes
         )))):
             if i == 0:
-                conv = nn.Conv1d(n_filters[-1], 2 * nf, fs)
-                bn = nn.BatchNorm1d(2 * nf)
-                do = nn.Dropout(p=.1)
+                setattr(self, f'up_conv{i}', nn.Conv1d(n_filters[-1], 2 * nf, fs))
             else:
-                conv = nn.Conv1d(n_filters[-i], 2 * nf, fs)
-                bn = nn.BatchNorm1d(2*nf)
-                do = nn.Dropout(p=.1)
-            subpixel = nn.PixelShuffle(2)
-            #conv.cuda()
-            #subpixel.cuda()
-            #bn.cuda()
-            #do.cuda()
-            self.up_convs.append((conv, subpixel, bn, do))
+                setattr(self, f'up_conv{i}', nn.Conv1d(n_filters[-i], 2 * nf, fs))
+            setattr(self, f'up_bn{i}', nn.BatchNorm1d(2*nf))
+            setattr(self, f'up_do{i}', nn.Dropout(p=0.1))
+        self.subpixel = nn.PixelShuffle(2)
 
         # final conv layer
         self.final_conv = nn.Conv1d(n_filters[0], 2, 9)
@@ -155,7 +139,10 @@ class TFiLM(nn.Module):
 
         downsampling_l = [x]
 
-        for (conv, bn, do) in self.conv_before:
+        for i in range(self.layers):
+            conv = getattr(self, f'down_conv{i}')
+            bn = getattr(self, f'down_bn{i}')
+            do = getattr(self, f'down_do{i}')
             x = F.leaky_relu(conv(x))
             x = do(bn(x))
             downsampling_l.append(x)
@@ -164,10 +151,13 @@ class TFiLM(nn.Module):
         x = self.bottleneck_dropout(x)#.to(device)
         x = self.bottleneck_bn(x)#.to(device)
 
-        for i, (conv, subpixel, bn, do) in enumerate(self.up_convs):
+        for i in range(self.layers):
+            conv = getattr(self, f'up_conv{i}')
+            bn = getattr(self, f'up_bn{i}')
+            do = getattr(self, f'up_do{i}')
             x = do(bn(conv(x))) #do(bn(conv(x).to(device)).to(device)).to(device)
             x = x.unsqueeze(2)
-            x = subpixel(x)
+            x = self.subpixel(x)
             x = x.view(-1, x.size()[2] * x.size()[1], x.size()[3])
             l_in = downsampling_l[len(downsampling_l) - 1 - i]
             x = torch.cat((x, l_in), -1)
