@@ -22,7 +22,7 @@ class StofNet(nn.Module):
 
         # init remaining layers
         for i in range(2, 13):
-            setattr(self, f'conv{i}', nn.Conv1d(64, 64, 3, 1, 1))
+            setattr(self, f'conv{i}', nn.Conv1d(64, 64, 7, 1, 'same'))
 
         # shuffle feature channels to high resolution output
         self.sample_shuffle = SampleShuffle1D(upsample_factor)
