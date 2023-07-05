@@ -386,7 +386,7 @@ if cfg.logging:
     model_summary = summary(model)
     wandb.summary['model_name'] = cfg.model
     wandb.summary['total_distance_mean'] = np.nanmean(total_distance)
-    wandb.summary['total_distance_std'] = np.std(total_distance)
+    wandb.summary['total_distance_std'] = np.std(total_distance[~np.isnan(total_distance)])
     wandb.summary['total_jaccard'] = np.nanmean(total_jaccard)
     wandb.summary['total_inference_time'] = np.nanmean(total_inference_time)
     wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
