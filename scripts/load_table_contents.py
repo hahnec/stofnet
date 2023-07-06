@@ -6,7 +6,7 @@ runs = wandb.Api().runs("StofNet")
 sorted_runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]) if run.state == 'finished' else 0, reverse=True)
 
 # retrieve a specific number of most recent runs
-num_recent_runs = 4
+num_recent_runs = 5
 recent_runs = sorted_runs[:num_recent_runs]
 
 ndigits = 3
@@ -42,7 +42,7 @@ with open("metrics_table.tex", "w") as f:
     for k, row_list in enumerate(metric_runs):
         
         # replace model entry
-        row_list[0] = ['Gradient~\cite{Hahne:22}', 'Zonzini~\cite{Zonzini:2022}', 'SincNet~\cite{ravanelli2018speaker}', 'Ours'][k]
+        row_list[0] = ['Gradient~\cite{Hahne:22}', 'Zonzini~\cite{Zonzini:2022}', 'Kuleshov~\cite{kuleshov2017audio}', 'SincNet~\cite{ravanelli2018speaker}', 'Ours'][k]
 
         # replace None entries
         row_list = [col.replace('None', 'n.a.') for col in row_list]
