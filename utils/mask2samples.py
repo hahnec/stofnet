@@ -19,7 +19,7 @@ def get_maxima_positions(scores, window_size, threshold=None):
 
     if threshold: suppressed[suppressed<threshold] = 0
 
-    indices = torch.nonzero(suppressed.squeeze(), as_tuple=False).long()
+    indices = torch.nonzero(suppressed.squeeze(1), as_tuple=False).long()
 
     return indices
 
@@ -70,22 +70,25 @@ def batch_mask2coords(scores, window_size, threshold=None, upsample_factor=1):
 
 def mask2coords(scores, window_size, threshold=None, upsample_factor=1, echo_max=None):
     
+    # obtain indices 2-D coordinates as in images (1. channel, 2. time)
     indices = get_maxima_positions(scores, window_size, threshold)
 
     # catch case where no maxima is found
     if indices.numel() == 0:
         return torch.zeros((scores.shape[0], scores.shape[1], 1), device=scores.device)
 
-    # Compute the flattened indices for gather operation
+    # compute the flattened indices for gather operation
     c_max = scores.shape[0]
-    counts = torch.bincount(indices[:, 0], minlength=c_max)
+    counts = torch.bincount(indices[:, 0], minlength=c_max) # detections per channel
     max_samples_per_channel = int(max(counts))
 
     cnts_idx = torch.vstack([torch.cat((torch.arange(0, count)+i*max_samples_per_channel, -1*torch.ones(max_samples_per_channel-count)), dim=-1) for i, count in enumerate(counts)]).long().to(scores.device)
     flattened_indices_3d = cnts_idx.flatten()[cnts_idx.flatten()>=0]
 
-    # Create a tensor with zeros and assign the samples to their respective indices
+    # create coordinate tensor with zeros
     coords = torch.zeros((c_max, max_samples_per_channel), device=scores.device)
+
+    # assign time samples indices to coordinates
     coords.view(-1)[flattened_indices_3d] = indices[:, 1].float()
 
     # align number of echoes based on score amplitudes
