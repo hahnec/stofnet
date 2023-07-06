@@ -38,10 +38,10 @@ def SubPixel1D(I, r):
     return X
 
 
-class TFiLM(nn.Module):
+class Kuleshov(nn.Module):
     def __init__(self, input_length, output_length, num_layers=4,
                  batch_size=128, learning_rate=1e-4, b1=0.99, b2=0.999):
-        super(TFiLM, self).__init__()
+        super(Kuleshov, self).__init__()
         self.layers = num_layers
         self.input_length = input_length
         self.output_length = output_length
@@ -59,9 +59,9 @@ class TFiLM(nn.Module):
             setattr(self, f'down_do{i}', nn.Dropout(p=0.1))
 
         # bottleneck layer
-        self.bottleneck = nn.Conv1d(n_filters[-1], n_filters[-1], n_filtersizes[-1], stride=2)#.to(device)
-        self.bottleneck_dropout = nn.Dropout(p=0.5)#.to(device)
-        self.bottleneck_bn = nn.BatchNorm1d(n_filters[-1])#.to(device)
+        self.bottleneck = nn.Conv1d(n_filters[-1], n_filters[-1], n_filtersizes[-1], stride=2)
+        self.bottleneck_dropout = nn.Dropout(p=0.5)
+        self.bottleneck_bn = nn.BatchNorm1d(n_filters[-1])
         # x = LeakyReLU(0.2)(x)
 
         # upsampling layers
@@ -94,7 +94,6 @@ class TFiLM(nn.Module):
             shape = [1, C / pow(r, 2), H * r, W * r]
             return shape[1:]
 
-        # self.input_length = 8000
         shape = [1, 1, self.input_length]
 
         dl = []
@@ -147,22 +146,22 @@ class TFiLM(nn.Module):
             x = do(bn(x))
             downsampling_l.append(x)
 
-        x = self.bottleneck(x)#.to(device)
-        x = self.bottleneck_dropout(x)#.to(device)
-        x = self.bottleneck_bn(x)#.to(device)
+        x = self.bottleneck(x)
+        x = self.bottleneck_dropout(x)
+        x = self.bottleneck_bn(x)
 
         for i in range(self.layers):
             conv = getattr(self, f'up_conv{i}')
             bn = getattr(self, f'up_bn{i}')
             do = getattr(self, f'up_do{i}')
-            x = do(bn(conv(x))) #do(bn(conv(x).to(device)).to(device)).to(device)
+            x = do(bn(conv(x)))
             x = x.unsqueeze(2)
             x = self.subpixel(x)
             x = x.view(-1, x.size()[2] * x.size()[1], x.size()[3])
             l_in = downsampling_l[len(downsampling_l) - 1 - i]
             x = torch.cat((x, l_in), -1)
 
-        x = self.final_conv(x)#.to(device)
+        x = self.final_conv(x)
         x = SubPixel1D(x, 2)
         x = x.view(x.size()[0], x.size()[1])
 

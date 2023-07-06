@@ -18,7 +18,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models import StofNet, ZonziniNetLarge, SincNet, GradPeak, TFiLM
+from models import StofNet, ZonziniNetLarge, SincNet, GradPeak, Kuleshov
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
@@ -128,8 +128,8 @@ if cfg.model.lower() == 'stofnet':
     model = StofNet(upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
 elif cfg.model.lower() == 'zonzini':
     model = ZonziniNetLarge()
-elif cfg.model.lower() == 'tfilm':
-    model = TFiLM(input_length=sample_num*cfg.rf_scale_factor, output_length=sample_num*cfg.rf_scale_factor*cfg.upsample_factor)
+elif cfg.model.lower() == 'kuleshov':
+    model = Kuleshov(input_length=sample_num*cfg.rf_scale_factor, output_length=sample_num*cfg.rf_scale_factor*cfg.upsample_factor)
 elif cfg.model.lower() == 'sincnet':
     cfg.upsample_factor = 1
     sincnet_params = {'input_dim': sample_num*cfg.rf_scale_factor,
@@ -205,7 +205,7 @@ for e in range(epochs):
                 masks_pred = model(frame)
 
                 # train loss
-                if cfg.model.lower() in ('stofnet', 'sincnet', 'tfilm'):
+                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
                     # get estimated samples
                     es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                     # loss computation
@@ -249,7 +249,7 @@ for e in range(epochs):
                     fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='train_channels')
                     
-                    if cfg.model.lower() in ('stofnet', 'sincnet', 'tfilm'):
+                    if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
                         # image frame plot
                         fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                         axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
@@ -304,7 +304,7 @@ for e in range(epochs):
                 toc = time.process_time() - tic
 
                 # validation loss
-                if cfg.model.lower() in ('stofnet', 'sincnet', 'tfilm'):
+                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
                     # get estimated samples
                     es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
                     # loss computation
@@ -370,7 +370,7 @@ for e in range(epochs):
                     fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='val_channels')
 
-                    if cfg.model.lower() in ('stofnet', 'sincnet', 'tfilm'):
+                    if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
                         # image frame plot
                         fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                         axs[0].imshow(masks_pred.flatten(0, 1).squeeze().detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
