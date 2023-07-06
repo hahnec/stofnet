@@ -1,5 +1,5 @@
-stofnet fanciful-moon-163_rf-scale20_epoch_10.pth 5.5
+stofnet fanciful-moon-163_rf-scale20_epoch_10.pth 5.25
 sincnet dazzling-sea-81_rf-scale20_epoch_10.pth 7.5
-kuleshov polished-pine-232_rf-scale20_epoch_10.pth 1
+kuleshov radiant-surf-252_rf-scale20_epoch_10.pth 1
 zonzini summer-wildflower-85_rf-scale20_epoch_10.pth Null
 gradpeak Null 1e-8
