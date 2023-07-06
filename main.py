@@ -306,7 +306,7 @@ for e in range(epochs):
                 # validation loss
                 if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
                     # get estimated samples
-                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th if cfg.th else ideal_th, upsample_factor=cfg.upsample_factor)
+                    es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                     # loss computation
                     masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
