@@ -11,7 +11,7 @@
 #SBATCH --account=ws_00000
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --array=1-4%1
+#SBATCH --array=1-5%1
 
 module load Python/3.8.6-GCCcore-10.2.0
 
@@ -31,6 +31,6 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 echo "Model: ${model}, Model File: ${model_file}"
 
-python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=128 batch_size=1 sequences=[1,2,3] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=array_inference
+python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=4 batch_size=16 sequences=[1] etol=1 data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=array_inference
 
-python ./stofnet/scripts/load_table_contents.py
+#python ./stofnet/scripts/load_table_contents.py
