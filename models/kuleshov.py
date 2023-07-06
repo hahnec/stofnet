@@ -1,33 +1,11 @@
+# Network design modeled after
+# https://github.com/kuleshov/audio-super-res
 # https://github.com/abhishyantkhare/audio-upsampling/blob/master/resnet/upnet_torch.py
-
-import subprocess
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-
-INPUT_SAMPLE_RATE = 8000
-OUTPUT_SAMPLE_RATE = 44100
-SAMPLE_LENGTH = 0.5
-BATCH_SIZE = 8
-NUM_WORKERS = 4
-
-INPUT_LEN = int(INPUT_SAMPLE_RATE * SAMPLE_LENGTH)
-OUTPUT_LEN = int(OUTPUT_SAMPLE_RATE * SAMPLE_LENGTH)
-
-
-DTYPE_RANGES = {
-    np.dtype('float32'): (-1.0, 1.0), np.dtype('int32'): (-2147483648, 2147483647),
-    np.dtype('int16'): (-32768, 32767), np.dtype('uint8'): (0, 255)
-}
-BITS_TO_DTYPE = {
-    64: np.dtype('float32'), 32: np.dtype('int32'), 16: np.dtype('int16'), 8: np.dtype('uint8')
-}
-
-# Network design modeled after
-# https://github.com/kuleshov/audio-super-res
 
 
 def SubPixel1D(I, r):
@@ -39,8 +17,7 @@ def SubPixel1D(I, r):
 
 
 class Kuleshov(nn.Module):
-    def __init__(self, input_length, output_length, num_layers=4,
-                 batch_size=128, learning_rate=1e-4, b1=0.99, b2=0.999):
+    def __init__(self, input_length, output_length, num_layers=4):
         super(Kuleshov, self).__init__()
         self.layers = num_layers
         self.input_length = input_length
@@ -56,13 +33,12 @@ class Kuleshov(nn.Module):
             else:
                 setattr(self, f'down_conv{i}', nn.Conv1d(n_filters[i - 1], nf, fs, stride=2))
             setattr(self, f'down_bn{i}', nn.BatchNorm1d(nf))
-            setattr(self, f'down_do{i}', nn.Dropout(p=0.1))
+            setattr(self, f'down_do{i}', nn.LeakyReLU(0.2))
 
         # bottleneck layer
         self.bottleneck = nn.Conv1d(n_filters[-1], n_filters[-1], n_filtersizes[-1], stride=2)
         self.bottleneck_dropout = nn.Dropout(p=0.5)
-        self.bottleneck_bn = nn.BatchNorm1d(n_filters[-1])
-        # x = LeakyReLU(0.2)(x)
+        self.bottleneck_last = nn.LeakyReLU(0.2)
 
         # upsampling layers
         for i, (l, nf, fs) in enumerate(reversed(list(zip(
@@ -73,7 +49,9 @@ class Kuleshov(nn.Module):
             else:
                 setattr(self, f'up_conv{i}', nn.Conv1d(n_filters[-i], 2 * nf, fs))
             setattr(self, f'up_bn{i}', nn.BatchNorm1d(2*nf))
-            setattr(self, f'up_do{i}', nn.Dropout(p=0.1))
+            setattr(self, f'up_do{i}', nn.Dropout(p=0.5))
+
+        # upsample
         self.subpixel = nn.PixelShuffle(2)
 
         # final conv layer
@@ -148,7 +126,7 @@ class Kuleshov(nn.Module):
 
         x = self.bottleneck(x)
         x = self.bottleneck_dropout(x)
-        x = self.bottleneck_bn(x)
+        x = self.bottleneck_last(x)
 
         for i in range(self.layers):
             conv = getattr(self, f'up_conv{i}')
@@ -167,26 +145,3 @@ class Kuleshov(nn.Module):
 
         x = self.output_fc(x)
         return x.unsqueeze(1)
-
-
-def upsample(model, file):
-    fs, audio = wavfile.read(file)
-    end_lim = int((len(audio) // INPUT_LEN) * INPUT_LEN)
-    audio = audio[:end_lim]
-    upsampled_audio = np.asarray([])
-    print("Beginning Upsampling")
-    for i in range(0, len(audio), INPUT_LEN):
-        model.eval()
-        torch.no_grad()
-        input_chunk = audio[i:i+INPUT_LEN]
-        input_chunk = torch.from_numpy(input_chunk)
-        input_chunk = input_chunk.float()#.to(device)
-        input_chunk = input_chunk.unsqueeze(0)
-        input_chunk = input_chunk.unsqueeze(1)
-        output_chunk = model.forward(input_chunk)
-        output_chunk = output_chunk.view(OUTPUT_LEN).detach().numpy()
-        upsampled_audio = np.append(upsampled_audio, output_chunk)
-        print("Upsampled chunk {} out of {}".format(i // INPUT_LEN, end_lim // INPUT_LEN))
-    print(upsampled_audio.min(), upsampled_audio.max())
-    upsampled_audio = upsampled_audio.astype(np.uint8)
-    wavfile.write('upsampled_' + file, OUTPUT_SAMPLE_RATE, upsampled_audio)
