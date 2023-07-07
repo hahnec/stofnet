@@ -84,6 +84,9 @@ elif cfg.data_dir.lower().__contains__('chirp'):
         rf_scale_factor = cfg.rf_scale_factor,
         transforms = torch.nn.Sequential(NormalizeVol()),
     )
+    # data-related config
+    cfg.fs = dataset.cfg.fhz_sample
+    cfg.c = dataset.cfg.speed_of_sound
     # override collate function
     collate_fn = None
 else:
