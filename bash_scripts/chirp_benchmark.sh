@@ -33,4 +33,4 @@ echo "Model: ${model}, Model File: ${model_file}"
 
 python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=chirp_array hilbert_opt=False rf_scale_factor=10
 
-python ./stofnet/utils/load_table_contents.py
+python ./stofnet/utils/load_table_contents.py chirp_array
