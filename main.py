@@ -337,14 +337,14 @@ for e in range(epochs):
                         'val_step': val_step,
                         'val_loss': loss.item(),
                         'val_ideal_threshold': ideal_th,
-                        'inference_time': toc/gt_sample.shape[0],
+                        'inference_time': toc/cfg.batch_size,
                     })
 
                     # evaluation metrics
                     for k, toa_err in enumerate(toa_errs):
                         total_distance.append(float(toa_err[0]))
                         total_jaccard.append(float(toa_err[3]))
-                        total_inference_time.append(toc/gt_sample.shape[0])
+                        total_inference_time.append(toc/cfg.batch_size)
                         wb.log({
                             'val_idx': (val_step-1)*cfg.batch_size*channel_num + k,
                             'val_points': (masks_true>0).sum(),
