@@ -274,12 +274,6 @@ for e in range(epochs):
         scheduler.step()
         torch.cuda.empty_cache()
 
-        # save the model
-        if cfg.logging:
-            ckpt_path = script_path / 'ckpts' / (wb.name+'_epoch_'+str(e+1)+'.pth')
-            ckpt_path.parent.mkdir(exist_ok=True)
-            torch.save(model.state_dict(), ckpt_path)
-
     # validation or test
     model.eval()
     val_loss = 0
@@ -386,8 +380,13 @@ for e in range(epochs):
 
     torch.cuda.empty_cache()
 
-# wandb summary
 if cfg.logging:
+    # save the model
+    ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+int(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
+    ckpt_path.parent.mkdir(exist_ok=True)
+    torch.save(model.state_dict(), ckpt_path)
+
+    # wandb summary
     model_summary = summary(model)
     wandb.summary['model_name'] = cfg.model
     wandb.summary['total_parameters'] = int(str(model_summary).split('\n')[-3].split(' ')[-1].replace(',',''))
