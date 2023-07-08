@@ -108,8 +108,8 @@ class SemiGlobalBlock(nn.Module):
         x_scale = nn.functional.pad(x_scale, (padding // 2, padding // 2))
         
         # Skip connection via concatenation
-        #x_out = torch.cat((x, x_scale), dim=1)
-        x_out = torch.add(x, x_scale)
+        #x = torch.cat((x, x_scale), dim=1)
+        x = torch.add(x, x_scale)
         
-        return x_out
+        return x
 
