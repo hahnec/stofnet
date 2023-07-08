@@ -21,7 +21,7 @@ class StofNet(nn.Module):
         self.conv1 = nn.Conv1d(in_channels, 64, 9, 1, 4)
         self.conv13 = nn.Conv1d(64, upsample_factor, 3, 1, 1)
 
-        self.sinc_layer = SincConv_fast(1, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
+        self.sinc_filter = SincConv_fast(1, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
         self.semi_global_block = SemiGlobalBlock(64, 64, 80)
 
         # init remaining layers
@@ -37,17 +37,17 @@ class StofNet(nn.Module):
     def forward(self, x):
         
         # input signal handling
-        x = self.sinc_layer(x)
+        x = self.sinc_filter(x)
         x = self.hilbert(x) if self.hilbert is not None else x
         
-
         # first layer
         x = F.relu(self.conv1(x))
-        res, res1 = x, x
-        
+
+        # semi-global block
         x = self.semi_global_block(x)
 
         # iterate through convolutional layers
+        res, res1 = x, x
         for i in range(2, 12):
             # get corresponding convolutional layer
             conv = getattr(self, f'conv{i}')
@@ -66,6 +66,8 @@ class StofNet(nn.Module):
 
     def _initialize_weights(self):
 
+        return None
+
         for i in range(1, 14):
             if i not in self.residual_layers:
                 init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
@@ -81,32 +83,33 @@ class SemiGlobalBlock(nn.Module):
         self.feat_scale = sample_scale//10
         
         # Contracting path
-        self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=3, stride=1, padding=1)
+        self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=5, stride=1, padding=1)
         self.contract_relu = nn.LeakyReLU()
         self.contract_pool = nn.MaxPool1d(kernel_size=sample_scale, stride=sample_scale)
         
         # Expanding path
-        self.expand_conv = nn.Conv1d(self.feat_scale*out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.expand_conv = nn.Conv1d(self.feat_scale*out_channels, out_channels, kernel_size=5, stride=1, padding=1)
         self.expand_relu = nn.LeakyReLU()
         self.expand_upsample = nn.Upsample(scale_factor=sample_scale, mode='nearest')
         
     def forward(self, x):
         # Contracting path
-        x_contract = self.contract_conv(x)
-        x_contract = self.contract_relu(x_contract)
-        x_contract_pooled = self.contract_pool(x_contract)
+        x_scale = self.contract_conv(x)
+        x_scale = self.contract_relu(x_scale)
+        x_scale = self.contract_pool(x_scale)
         
         # Expanding path
-        x_expand = self.expand_conv(x_contract_pooled)
-        x_expand = self.expand_relu(x_expand)
-        x_expand = self.expand_upsample(x_expand)
+        x_scale = self.expand_conv(x_scale)
+        x_scale = self.expand_relu(x_scale)
+        x_scale = self.expand_upsample(x_scale)
         
         # Adjust padding for correct output size
-        padding = max(0, x.size(-1) - x_expand.size(-1))
-        x_expand = nn.functional.pad(x_expand, (padding // 2, padding // 2))
+        padding = max(0, x.size(-1) - x_scale.size(-1))
+        x_scale = nn.functional.pad(x_scale, (padding // 2, padding // 2))
         
         # Skip connection via concatenation
-        #x_out = torch.cat((x_padded, x_expand), dim=1)
-        x_out = torch.add(x, x_expand)
+        #x_out = torch.cat((x, x_scale), dim=1)
+        x_out = torch.add(x, x_scale)
         
         return x_out
+
