@@ -13,11 +13,16 @@ class StofNet(nn.Module):
         super(StofNet, self).__init__()
     
         # input signal handling
-        if fs is not None:
+        in_channels = 1
+        self.sinc_filter = None
+        self.hilb_filter = None
+        if fs:
             from models.sincnet import SincConv_fast
-            self.sinc_filter = SincConv_fast(128, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
-        self.hilbert = HilbertTransform(concat_oscil=concat_oscil) if hilbert_opt else None
-        in_channels = 2 if hilbert_opt and concat_oscil else 1
+            in_channels = 128
+            self.sinc_filter = SincConv_fast(in_channels, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
+        elif hilbert_opt:
+            if hilbert_opt and concat_oscil: in_channels = 2
+            self.hilb_filter = HilbertTransform(concat_oscil=concat_oscil)
 
         # init first and last layer
         self.conv1 = nn.Conv1d(in_channels, feat_channels, 9, 1, 4)
@@ -40,7 +45,7 @@ class StofNet(nn.Module):
         
         # input signal handling
         x = self.sinc_filter(x) if self.sinc_filter else x
-        x = self.hilbert(x) if self.hilbert is not None else x
+        x = self.hilb_filter(x) if self.hilb_filter is not None else x
         
         # first layer
         x = F.relu(self.conv1(x))
