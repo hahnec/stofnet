@@ -1,5 +1,5 @@
 stofnet bright-butterfly-503_rf-scale10_epoch_50.pth Null
-sincnet resilient-sunset-477_rf-scale10_epoch_50.pth Null
+sincnet apricot-eon-506_rf-scale10_epoch_50.pth Null
 kuleshov devout-sun-469_rf-scale10_epoch_50.pth Null
 zonzini floral-snowflake-470_rf-scale10_epoch_50.pth Null
 gradpeak Null 1e-8
