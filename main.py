@@ -128,7 +128,7 @@ if cfg.logging:
 
 # load model
 if cfg.model.lower() == 'stofnet':
-    model = StofNet(fs=cfg.fs, upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
+    model = StofNet(upsample_factor=cfg.upsample_factor, fs=cfg.fs*cfg.rf_scale_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
 elif cfg.model.lower() == 'zonzini':
     model = ZonziniNetSmall() if cfg.data_dir.lower().__contains__('chirp') else ZonziniNetLarge()
 elif cfg.model.lower() == 'kuleshov':
@@ -136,7 +136,7 @@ elif cfg.model.lower() == 'kuleshov':
 elif cfg.model.lower() == 'sincnet':
     cfg.upsample_factor = 1
     sincnet_params = {'input_dim': sample_num*cfg.rf_scale_factor,
-                        'fs': cfg.fs,
+                        'fs': cfg.fs*cfg.rf_scale_factor,
                         'cnn_N_filt': [128, 128, 128, 1],
                         'cnn_len_filt': [1023, 11, 9, 7],
                         'cnn_max_pool_len': [1, 1, 1, 1],
