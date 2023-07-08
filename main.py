@@ -381,10 +381,6 @@ for e in range(epochs):
     torch.cuda.empty_cache()
 
 if cfg.logging:
-    # save the model
-    ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+str(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
-    ckpt_path.parent.mkdir(exist_ok=True)
-    torch.save(model.state_dict(), ckpt_path)
 
     # wandb summary
     model_summary = summary(model)
@@ -394,3 +390,9 @@ if cfg.logging:
     wandb.summary['total_inference_time'] = np.nanmean(total_inference_time)
     wandb.summary['total_distance_mean'] = np.nanmean(total_distance)
     wandb.summary['total_distance_std'] = np.std(np.array(total_distance)[~np.isnan(total_distance)])
+
+    # save the model
+    if not cfg.evaluate:
+        ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+str(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
+        ckpt_path.parent.mkdir(exist_ok=True)
+        torch.save(model.state_dict(), ckpt_path)
