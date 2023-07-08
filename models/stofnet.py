@@ -19,7 +19,8 @@ class StofNet(nn.Module):
         if fs:
             from models.sincnet import SincConv_fast
             in_channels = 128
-            self.sinc_filter = SincConv_fast(in_channels, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
+            kernel_size = 1024
+            self.sinc_filter = SincConv_fast(in_channels, kernel_size=kernel_size+1, sample_rate=fs, in_channels=1, padding=kernel_size//2)
         elif hilbert_opt:
             if hilbert_opt and concat_oscil: in_channels = 2
             self.hilb_filter = HilbertTransform(concat_oscil=concat_oscil)
@@ -119,4 +120,3 @@ class SemiGlobalBlock(nn.Module):
         x = torch.add(x, x_scale)
         
         return x
-
