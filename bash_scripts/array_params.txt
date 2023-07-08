@@ -1,5 +1,5 @@
-stofnet jumping-eon-424_rf-scale20_epoch_10.pth 5.25
+stofnet jumping-eon-424_rf-scale20_epoch_10.pth 1
 sincnet dazzling-sea-81_rf-scale20_epoch_10.pth 7.5
-kuleshov radiant-surf-252_rf-scale20_epoch_10.pth 1
+kuleshov radiant-surf-252_rf-scale20_epoch_10.pth 0.1
 zonzini summer-wildflower-85_rf-scale20_epoch_10.pth Null
 gradpeak Null 1e-8
