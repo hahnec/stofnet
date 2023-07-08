@@ -22,20 +22,20 @@ for metric_run in recent_runs:
 
     fmt = '.'+str(ndigits)+'f'
     model_name, total_dist_avg, total_dist_std, total_time, total_params, total_jaccard = [format(round(el, ndigits), fmt) if isinstance(el, (float, int)) else el for el in [model_name, total_dist_mean, total_dist_std, total_time, total_params, total_jaccard]]
-    row_list = [str(model_name), str(total_params).split('.')[0], str(total_dist_avg)+' $\pm$ '+str(total_dist_std), str(total_jaccard), str(total_time)]
+    row_list = [str(model_name), str(total_dist_avg)+' $\pm$ '+str(total_dist_std), str(total_jaccard), str(total_params).split('.')[0], str(total_time)]
     metric_runs.append(row_list)
 
 with open("metrics_table.tex", "w") as f:
     # Write the LaTeX table header
     f.write("\\begin{tabularx}{\linewidth}{ \n \
         >{\\raggedright\\arraybackslash}p{4.9em} %| \n \
-        >{\\raggedleft\\arraybackslash}p{2.8em} %| \n \
         >{\centering\\arraybackslash}p{5.76em} %| \n \
         S[table-format=2.3] %| \n \
+        >{\\raggedleft\\arraybackslash}p{2.8em} %| \n \
         >{\centering\\arraybackslash}p{2em} %| \n \
         }\n")
     f.write("\\toprule\n")
-    f.write("\centering Model & \centering Weights [k\#] & {RMSE [Sample]} & {Jaccard~[\%]} & Time [ms] \\\\\n")
+    f.write("\centering Model & {RMSE [Sample]} & {Jaccard~[\%]}& \centering Weights [k\#]  & Time [ms] \\\\\n")
     f.write("\\midrule\n")
 
     # Iterate over the runs and extract metrics
