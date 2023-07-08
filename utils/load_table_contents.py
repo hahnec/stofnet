@@ -2,6 +2,9 @@ import wandb
 
 runs = wandb.Api().runs("StofNet")
 
+# filter group runs
+runs = [run for run in runs if run.group == 'array_inference']
+
 # Sort the runs by creation time (most recent first)
 sorted_runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]) if run.state == 'finished' else 0, reverse=True)
 
