@@ -382,7 +382,7 @@ for e in range(epochs):
 
 if cfg.logging:
     # save the model
-    ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+int(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
+    ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+str(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
     ckpt_path.parent.mkdir(exist_ok=True)
     torch.save(model.state_dict(), ckpt_path)
 
