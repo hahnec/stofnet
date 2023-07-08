@@ -31,6 +31,6 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 echo "Model: ${model}, Model File: ${model_file}"
 
-python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=128 batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=array_inference hilbert_opt=False
+python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=128 batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=array_inference hilbert_opt=False rf_scale_factor=10
 
 python ./stofnet/utils/load_table_contents.py
