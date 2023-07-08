@@ -1,5 +1,5 @@
 stofnet bumbling-microwave-468_rf-scale10_epoch_50.pth Null
-sincnet resilient-cherry-472_rf-scale10_epoch_50.pth Null
+sincnet resilient-sunset-477_rf-scale10_epoch_50.pth Null
 kuleshov devout-sun-469_rf-scale10_epoch_50.pth Null
 zonzini floral-snowflake-470_rf-scale10_epoch_50.pth Null
 gradpeak Null 1e-8
