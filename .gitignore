@@ -130,5 +130,6 @@ dmypy.json
 
 .vscode
 
-# paths
+# custom
 stof_chirp101_dataset
+*.tex
