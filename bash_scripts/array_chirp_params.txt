@@ -1,0 +1,5 @@
+stofnet rare-wind-464_rf-scale10_epoch_50.pth Null
+sincnet deep-sunset-467_rf-scale10_epoch_50.pth Null
+kuleshov electric_glitter-465_rf-scale10_epoch_50.pth Null
+zonzini revived-oath-463_rf-scale10_epoch_50.pth Null
+gradpeak Null 1e-8

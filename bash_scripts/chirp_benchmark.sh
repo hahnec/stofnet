@@ -19,7 +19,7 @@ source ~/23_culminate/stofnet/venv/bin/activate
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-param_store=~/23_culminate/stofnet/bash_scripts/array_pala_params.txt
+param_store=~/23_culminate/stofnet/bash_scripts/array_chirp_params.txt
 
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 model_file=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $2}')
@@ -31,6 +31,4 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 echo "Model: ${model}, Model File: ${model_file}"
 
-python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=4 batch_size=16 sequences=[1] etol=1 data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=array_inference
-
-#python ./stofnet/scripts/load_table_contents.py
+python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True ch_gap=128 batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=array_inference
