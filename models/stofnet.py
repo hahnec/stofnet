@@ -15,7 +15,7 @@ class StofNet(nn.Module):
         # input signal handling
         if fs is not None:
             from models.sincnet import SincConv_fast
-            self.sinc_filter = SincConv_fast(1, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
+            self.sinc_filter = SincConv_fast(128, kernel_size=129, sample_rate=fs, in_channels=1, padding=64)
         self.hilbert = HilbertTransform(concat_oscil=concat_oscil) if hilbert_opt else None
         in_channels = 2 if hilbert_opt and concat_oscil else 1
 
