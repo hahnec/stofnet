@@ -223,7 +223,7 @@ for e in range(epochs):
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
                     gt_true[gt_true==0] = 1e12
                     idx_values = torch.argmin(gt_true, dim=-1) if True else max_values.argmax(-1)
-                    masks_true = torch.gather(gt_sample, -1, idx_values)
+                    masks_true = torch.gather(gt_sample, -1, idx_values).float()
                     loss = loss_mse(masks_pred, masks_true)
                 train_loss += loss.item()
                 train_step += 1
