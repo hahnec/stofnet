@@ -130,7 +130,7 @@ if cfg.logging:
 if cfg.model.lower() == 'stofnet':
     model = StofNet(fs=cfg.fs, upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
 elif cfg.model.lower() == 'zonzini':
-    model = ZonziniNetLarge() if cfg.data_dir.lower().__contains__('pala') else ZonziniNetSmall()
+    model = ZonziniNetSmall() if cfg.data_dir.lower().__contains__('chirp') else ZonziniNetLarge()
 elif cfg.model.lower() == 'kuleshov':
     model = Kuleshov(input_length=sample_num*cfg.rf_scale_factor, output_length=sample_num*cfg.rf_scale_factor*cfg.upsample_factor)
 elif cfg.model.lower() == 'sincnet':
