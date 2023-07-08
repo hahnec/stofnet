@@ -18,7 +18,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models import StofNet, ZonziniNetLarge, SincNet, GradPeak, Kuleshov
+from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
@@ -130,7 +130,7 @@ if cfg.logging:
 if cfg.model.lower() == 'stofnet':
     model = StofNet(fs=cfg.fs, upsample_factor=cfg.upsample_factor, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
 elif cfg.model.lower() == 'zonzini':
-    model = ZonziniNetLarge()
+    model = ZonziniNetLarge() if cfg.data_dir.lower().__contains__('pala') else ZonziniNetSmall
 elif cfg.model.lower() == 'kuleshov':
     model = Kuleshov(input_length=sample_num*cfg.rf_scale_factor, output_length=sample_num*cfg.rf_scale_factor*cfg.upsample_factor)
 elif cfg.model.lower() == 'sincnet':
