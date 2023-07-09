@@ -125,8 +125,6 @@ if cfg.logging:
     wandb.define_metric('val_toa_false_positive', step_metric='val_idx')
     wandb.define_metric('val_toa_false_negative', step_metric='val_idx')
     wandb.define_metric('lr', step_metric='epoch')
-    frame_artifact = wandb.Artifact('frame', type='data', description=cfg.model)
-    ckpt_artifact = wandb.Artifact('checkpoint', type='model', description=cfg.model)
 
 # load model
 if cfg.model.lower() == 'stofnet':
@@ -371,6 +369,7 @@ for e in range(epochs):
                         fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                         wb_img_upload(fig, log_key='val_channels')
                         # channel plot artifact
+                        frame_artifact = wandb.Artifact(f'frame_{batch_idx}', type='data', description=cfg.model)
                         for key, var in zip(['data', 'toa', 'gt'], [frame, es_sample, gt_sample]):
                             table = wandb.Table(data=var.cpu().numpy().squeeze(1).T, columns=['Column'+str(el) for el in np.arange(var.shape[0])])
                             frame_artifact.add(table, key)
@@ -405,6 +404,7 @@ if cfg.logging:
         ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+str(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
         ckpt_path.parent.mkdir(exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
+        ckpt_artifact = wandb.Artifact('checkpoint', type='model', description=cfg.model)
         ckpt_artifact.add_file(ckpt_path)
         wandb.log_artifact(ckpt_artifact)
 
