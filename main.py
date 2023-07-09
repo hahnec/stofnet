@@ -371,9 +371,9 @@ for e in range(epochs):
                         fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                         wb_img_upload(fig, log_key='val_channels')
                         # channel plot artifact
-                        frame_artifact.add(frame[0].cpu().numpy(), 'data')
-                        frame_artifact.add(es_sample[0].cpu().numpy(), 'toa')
-                        frame_artifact.add(gt_sample[0].cpu().numpy(), 'gt')
+                        for key, var in zip(['data', 'toa', 'gt'], [frame, es_sample, gt_sample]):
+                            table = wandb.Table(data=var.cpu().numpy().squeeze(1).T, columns=['Column'+str(el) for el in np.arange(var.shape[0])])
+                            frame_artifact.add(table, key)
                         wandb.log_artifact(frame_artifact)
 
                         if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
