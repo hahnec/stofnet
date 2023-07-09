@@ -125,6 +125,8 @@ if cfg.logging:
     wandb.define_metric('val_toa_false_positive', step_metric='val_idx')
     wandb.define_metric('val_toa_false_negative', step_metric='val_idx')
     wandb.define_metric('lr', step_metric='epoch')
+    frame_artifact = wandb.Artifact('frame', type='data', description=cfg.model)
+    ckpt_artifact = wandb.Artifact('checkpoint', type='model', description=cfg.model)
 
 # load model
 if cfg.model.lower() == 'stofnet':
@@ -357,24 +359,31 @@ for e in range(epochs):
                             'val_toa_false_negative': toa_err[6],
                         })
 
-                    # unravel channel and batch dimension
-                    frame = unravel_batch_dim(frame)
-                    gt_sample = unravel_batch_dim(gt_sample)
-                    es_sample = unravel_batch_dim(es_sample)
-                    masks_pred = unravel_batch_dim(masks_pred)
-                    masks_true = unravel_batch_dim(masks_true)
-                    # channel plot
-                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
-                    wb_img_upload(fig, log_key='val_channels')
+                    # skip every other frame
+                    if batch_idx % 100 == 1 and cfg.evaluate:
+                        # unravel channel and batch dimension
+                        frame = unravel_batch_dim(frame)
+                        gt_sample = unravel_batch_dim(gt_sample)
+                        es_sample = unravel_batch_dim(es_sample)
+                        masks_pred = unravel_batch_dim(masks_pred)
+                        masks_true = unravel_batch_dim(masks_true)
+                        # channel plot
+                        fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                        wb_img_upload(fig, log_key='val_channels')
+                        # channel plot artifact
+                        frame_artifact.add(frame[0].cpu().numpy(), 'data')
+                        frame_artifact.add(es_sample[0].cpu().numpy(), 'toa')
+                        frame_artifact.add(gt_sample[0].cpu().numpy(), 'gt')
+                        wandb.log_artifact(frame_artifact)
 
-                    if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
-                        # image frame plot
-                        fig, axs = plt.subplots(1, 2, figsize=(15, 5))
-                        axs[0].imshow(masks_pred.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                        axs[1].imshow(masks_true.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
-                        plt.tight_layout()
-                        wb_img_upload(fig, log_key='val_frames')
-                        plt.close('all')
+                        if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov'):
+                            # image frame plot
+                            fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+                            axs[0].imshow(masks_pred.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                            axs[1].imshow(masks_true.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
+                            plt.tight_layout()
+                            wb_img_upload(fig, log_key='val_frames')
+                            plt.close('all')
 
                 pbar.update(cfg.batch_size)
 
@@ -396,3 +405,7 @@ if cfg.logging:
         ckpt_path = script_path / 'ckpts' / (wb.name+'_rf-scale'+str(cfg.rf_scale_factor)+'_epoch_'+str(e+1)+'.pth')
         ckpt_path.parent.mkdir(exist_ok=True)
         torch.save(model.state_dict(), ckpt_path)
+        ckpt_artifact.add_file(ckpt_path)
+        wandb.log_artifact(ckpt_artifact)
+
+    wandb.finish()
