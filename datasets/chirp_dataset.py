@@ -7,6 +7,16 @@ from omegaconf import OmegaConf
 from scipy.interpolate import interp1d
 
 
+def upscale_1d(data, rescale_factor, fs=1):
+
+    data_len = data.shape[0]
+    x = np.linspace(0, data_len/fs, num=data_len, endpoint=True)
+    t = np.linspace(0, data_len/fs, num=int(data_len*rescale_factor), endpoint=True)
+    y = interp1d(x, data, axis=0)(t)
+
+    return y
+
+
 class ChirpDataset(Dataset):
     def __init__(self, root_dir, split_dirname='test', rf_scale_factor=10, transforms=None):
         
@@ -68,14 +78,11 @@ class ChirpDataset(Dataset):
 
     @staticmethod
     def iq2rf(iq_data, fc, fs, rescale_factor=1):
-
-        data_len = iq_data.shape[0]
-        x = np.linspace(0, data_len/fs, num=data_len, endpoint=True)
-        t = np.linspace(0, data_len/fs, num=int(data_len*rescale_factor), endpoint=True)
         
-        f = interp1d(x, iq_data, axis=0)
-        y = f(t)
+        # upscale IQ for RF representation
+        y = upscale_1d(iq_data, rescale_factor=rescale_factor, fs=fs)
 
+        # IQ to RF conversion
         rf_data = y * np.exp(2j*np.pi*fc*t)
 
         return rf_data.real
@@ -109,10 +116,11 @@ class ChirpDataset(Dataset):
         # convert to radio-frequency signal
         rf_data = self.iq2rf(iq_data, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
         rf_gt = self.iq2rf(iq_gt, fc=self.cfg.fhz_carrier, fs=self.cfg.fhz_sample, rescale_factor=self.rf_scale_factor)
+        envelope_data = upscale_1d(envelope_data, rescale_factor=self.rf_scale_factor)
 
         if self.transforms:
             for transform in self.transforms:
-                (envelope_data, _), (iq_data, gt_sample), (iq_gt, _) = [transform(data, sample)[:2] for data, sample in zip([envelope_data, iq_data, iq_gt], [gt_sample]*3)]
+                (envelope_data, _), (rf_data, gt_sample), (rf_gt, _) = [transform(data, sample)[:2] for data, sample in zip([envelope_data, rf_data, rf_gt], [gt_sample]*3)]
 
         return envelope_data, rf_data, rf_gt, gt_sample, gt_position, label
 

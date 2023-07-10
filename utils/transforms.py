@@ -54,10 +54,15 @@ class CropChannelData(Module):
 
     def forward(self, waveform: (ndarray, Tensor), gt: (float, ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
 
-        self.ratio = float(randn(1)+.5) if self.ratio is None else self.ratio
+        self.ratio = float(rand(1)) if self.ratio is None else self.ratio
+
+        if not (0 < self.ratio < 1):
+            return waveform, gt, *args, *kwargs
+
         width = int(round(waveform.size * self.ratio))
-        start = int(round(gt - float(randn(1)) * width))
+        start = int(float(rand(1)) * (waveform.size-width))
+        start = min(start, waveform.size-width)     # ensure 
         cropped = waveform[start:start+width]
-        gt -= start
+        gt -= start if gt > start else np.nan
 
         return cropped, gt, *args, *kwargs
