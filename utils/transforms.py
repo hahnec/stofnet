@@ -2,7 +2,8 @@ from torch import Tensor, rand, randn, clamp
 from torch.nn import Module
 from torchaudio import functional as F
 from torchaudio.transforms import Vol
-from numpy import ndarray
+from numpy import ndarray, random, linspace
+from scipy.interpolate import interp1d
 
 
 class RandomVol(Vol):
@@ -45,24 +46,57 @@ class NormalizeVol(Module):
 class CropChannelData(Module):
     def __init__(self,
         ratio: float = None,
-        resize: bool = False,
+        resize: bool = True,
     ):
         super(CropChannelData, self).__init__()
 
         self.ratio = ratio
         self.resize = resize
 
+    @staticmethod
+    def upscale_1d(data, rescale_factor):
+
+        x = linspace(0, data.size, num=data.size, endpoint=True)
+        t = linspace(0, data.size, num=int(data.size*rescale_factor), endpoint=True)
+        y = interp1d(x, data, axis=0)(t)
+
+        return y
+
     def forward(self, waveform: (ndarray, Tensor), gt: (float, ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
 
         self.ratio = float(rand(1)) if self.ratio is None else self.ratio
 
+        # validate ratio
         if not (0 < self.ratio < 1):
             return waveform, gt, *args, *kwargs
 
+        # variable init
         width = int(round(waveform.size * self.ratio))
-        start = int(float(rand(1)) * (waveform.size-width))
-        start = min(start, waveform.size-width)     # ensure 
-        cropped = waveform[start:start+width]
-        gt -= start if gt > start else np.nan
+        ref = int(round(gt))
+
+        # define start and end indices
+        start = max(0, ref-width//2)
+        end = min(ref+width//2, waveform.size)
+        if end == waveform.size: start = end - width
+        if start == 0: end = width
+
+        # randomized crop window movement within boundaries
+        max_dist = min(ref-start, end-ref)  # keep window around reference index
+        shift = random.randint(-min(start, max_dist//2), min(waveform.size-end, max_dist//2))
+        start += shift
+        end += shift
+
+        # cropping
+        cropped = waveform[start:end]
+        gt -= start
+        assert cropped.size == width
+
+        # resize for consistent waveform length (as required by some models)
+        if self.resize:
+            rescale_factor = waveform.size / cropped.size
+            cropped = self.upscale_1d(cropped, rescale_factor)
+            gt *= rescale_factor
+
+            assert cropped.size == waveform.size
 
         return cropped, gt, *args, *kwargs
