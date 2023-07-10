@@ -96,7 +96,7 @@ def gaussian_filter_1d(data: torch.Tensor, sigma: float) -> torch.Tensor:
     return data.squeeze(1)
 
 
-def toa_detect(frame, threshold=1, rescale_factor=1, echo_max=float('inf')):
+def toa_detect(frame, threshold=None, rescale_factor=1, echo_max=float('inf')):
 
     # extract ToAs
     hilbert_data = abs(hilbert_transform(frame))
@@ -117,7 +117,7 @@ def toa_detect(frame, threshold=1, rescale_factor=1, echo_max=float('inf')):
 
 
 class GradPeak(torch.nn.Module):
-    def __init__(self, threshold=1, rescale_factor=1, echo_max=float('inf')):
+    def __init__(self, threshold=None, rescale_factor=1, echo_max=float('inf')):
         super(GradPeak, self).__init__()
 
         self._fun = lambda x: toa_detect(x, threshold=threshold, rescale_factor=rescale_factor, echo_max=echo_max)
