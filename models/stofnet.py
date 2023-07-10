@@ -26,15 +26,15 @@ class StofNet(nn.Module):
             self.hilb_filter = HilbertTransform(concat_oscil=concat_oscil)
 
         # init first and last layer
-        self.conv1 = nn.Conv1d(in_channels, feat_channels, 9, 1, 4)
-        self.conv13 = nn.Conv1d(feat_channels, upsample_factor, 3, 1, 1)
+        self.conv1 = nn.Conv1d(in_channels, num_features, 9, 1, 4)
+        self.conv13 = nn.Conv1d(num_features, upsample_factor, 3, 1, 1)
 
         # init semi-global block
-        self.semi_global_block = SemiGlobalBlock(feat_channels, feat_channels, 80)
+        self.semi_global_block = SemiGlobalBlock(num_features, num_features, 80)
 
         # init remaining layers
         for i in range(2, 13):
-            setattr(self, f'conv{i}', nn.Conv1d(feat_channels, feat_channels, 7, 1, padding='same'))
+            setattr(self, f'conv{i}', nn.Conv1d(num_features, num_features, 7, 1, padding='same'))
 
         # shuffle feature channels to high resolution output
         self.sample_shuffle = SampleShuffle1D(upsample_factor)
