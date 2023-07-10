@@ -80,7 +80,10 @@ class ChirpDataset(Dataset):
     def iq2rf(iq_data, fc, fs, rescale_factor=1):
         
         # upscale IQ for RF representation
-        y = upscale_1d(iq_data, rescale_factor=rescale_factor, fs=fs)
+        data_len = iq_data.shape[0]
+        x = np.linspace(0, data_len/fs, num=data_len, endpoint=True)
+        t = np.linspace(0, data_len/fs, num=int(data_len*rescale_factor), endpoint=True)
+        y = resize_1d(iq_data, x, t)
 
         # IQ to RF conversion
         rf_data = y * np.exp(2j*np.pi*fc*t)
