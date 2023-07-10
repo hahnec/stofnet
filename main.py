@@ -51,6 +51,7 @@ else:
     pin_memory = False
 
 # load dataset
+transforms_list = [NormalizeVol()]
 if cfg.data_dir.lower().__contains__('pala'):
     # load dataset
     dataset = InSilicoDatasetRf(
@@ -62,7 +63,7 @@ if cfg.data_dir.lower().__contains__('pala'):
         clutter_db = cfg.clutter_db,
         temporal_filter_opt=cfg.temporal_filter,
         pow_law_opt = cfg.pow_law_opt,
-        transforms = torch.nn.Sequential(NormalizeVol()),
+        transforms = torch.nn.Sequential(*transforms_list),
         )
     
     # data-related config
@@ -78,11 +79,12 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     data_path = script_path / cfg.data_dir
     zip_extract(data_path)
     # load dataset
+    if not cfg._evaluate: transforms_list = transforms_list + [CropChannelData(ratio=.8, resize=False)]
     dataset = ChirpDataset(
         root_dir = data_path,
         split_dirname = 'test' if cfg.evaluate else 'train',
         rf_scale_factor = cfg.rf_scale_factor,
-        transforms = torch.nn.Sequential(NormalizeVol(), CropChannelData(ratio=.8, resize=True)),
+        transforms = torch.nn.Sequential(*transforms_list),
     )
     # data-related config
     cfg.fs = dataset.cfg.fhz_sample
