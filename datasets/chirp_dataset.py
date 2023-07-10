@@ -112,9 +112,10 @@ class ChirpDataset(Dataset):
 
         if self.transforms:
             for transform in self.transforms:
-                envelope_data, iq_data, iq_gt = [transform(data) for data in [envelope_data, iq_data, iq_gt]]
+                (envelope_data, _), (iq_data, gt_sample), (iq_gt, _) = [transform(data, sample)[:2] for data, sample in zip([envelope_data, iq_data, iq_gt], [gt_sample]*3)]
 
         return envelope_data, rf_data, rf_gt, gt_sample, gt_position, label
+
 
 if __name__ == '__main__':
 

@@ -15,7 +15,7 @@ class RandomVol(Vol):
 
         self.normal_distribution = normal_distribution
 
-    def forward(self, waveform: (ndarray, Tensor)) -> Tensor:
+    def forward(self, waveform: (ndarray, Tensor), *args, **kwargs) -> Tensor:
         
         if isinstance(waveform, ndarray): waveform = Tensor(waveform)
 
@@ -30,13 +30,34 @@ class RandomVol(Vol):
         if self.gain_type == "power":
             waveform = F.gain(waveform, 10 * math.log10(self.gain * rand_num))
         
-        return waveform #clamp(waveform, -1, 1)
+        return waveform, *args, *kwargs #clamp(waveform, -1, 1)
 
 
 class NormalizeVol(Module):
     def __init__(self):
         super(NormalizeVol, self).__init__()
 
-    def forward(self, waveform: (ndarray, Tensor)) -> (ndarray, Tensor):
+    def forward(self, waveform: (ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
 
-        return waveform/abs(waveform).max()
+        return waveform/abs(waveform).max(), *args, *kwargs
+
+
+class CropChannelData(Module):
+    def __init__(self,
+        ratio: float = None,
+        resize: bool = False,
+    ):
+        super(CropChannelData, self).__init__()
+
+        self.ratio = ratio
+        self.resize = resize
+
+    def forward(self, waveform: (ndarray, Tensor), gt: (float, ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
+
+        self.ratio = float(randn(1)+.5) if self.ratio is None else self.ratio
+        width = int(round(waveform.size * self.ratio))
+        start = int(round(gt - float(randn(1)) * width))
+        cropped = waveform[start:start+width]
+        gt -= start
+
+        return cropped, gt, *args, *kwargs
