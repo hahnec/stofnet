@@ -83,7 +83,7 @@ class ChirpDataset(Dataset):
         data_len = iq_data.shape[0]
         x = np.linspace(0, data_len/fs, num=data_len, endpoint=True)
         t = np.linspace(0, data_len/fs, num=int(data_len*rescale_factor), endpoint=True)
-        y = interp1d(x, data, axis=0)(t)
+        y = interp1d(x, iq_data, axis=0)(t)
 
         # IQ to RF conversion
         rf_data = y * np.exp(2j*np.pi*fc*t)
