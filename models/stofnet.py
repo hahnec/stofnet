@@ -9,7 +9,7 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor, feat_channels=64, fs=None, hilbert_opt=True, concat_oscil=True):
+    def __init__(self, num_features=64, upsample_factor=4, fs=None, hilbert_opt=True, concat_oscil=True):
         super(StofNet, self).__init__()
     
         # input signal handling
@@ -89,34 +89,63 @@ class SemiGlobalBlock(nn.Module):
 
         self.sample_scale = sample_scale
         self.feat_scale = max(1, sample_scale//10)
-        
+
         # Contracting path
         self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=5, stride=1, padding=1)
         self.contract_relu = nn.LeakyReLU()
+        #self.attention = AttentionBlock(self.feat_scale*out_channels, self.feat_scale*out_channels)
         self.contract_pool = nn.MaxPool1d(kernel_size=sample_scale, stride=sample_scale)
-        
+
         # Expanding path
         self.expand_conv = nn.Conv1d(self.feat_scale*out_channels, out_channels, kernel_size=5, stride=1, padding=1)
         self.expand_relu = nn.LeakyReLU()
         self.expand_upsample = nn.Upsample(scale_factor=sample_scale, mode='nearest')
-        
+
     def forward(self, x):
         # Contracting path
         x_scale = self.contract_conv(x)
         x_scale = self.contract_relu(x_scale)
+        #x_scale = self.attention(x_scale)  # Apply attention
         x_scale = self.contract_pool(x_scale)
-        
+
         # Expanding path
         x_scale = self.expand_conv(x_scale)
         x_scale = self.expand_relu(x_scale)
         x_scale = self.expand_upsample(x_scale)
-        
+
         # Adjust padding for correct output size
         padding = max(0, x.size(-1) - x_scale.size(-1))
         x_scale = nn.functional.pad(x_scale, (padding // 2, padding // 2))
-        
-        # Skip connection via concatenation
-        #x = torch.cat((x, x_scale), dim=1)
+
+        # Skip connection via addition
         x = torch.add(x, x_scale)
         
         return x
+
+
+class AttentionBlock(nn.Module):
+    def __init__(self, input_dim, hidden_dim):
+        super(AttentionBlock, self).__init__()
+
+        self.query = nn.Linear(input_dim, hidden_dim)
+        self.key = nn.Linear(input_dim, hidden_dim)
+        self.value = nn.Linear(input_dim, hidden_dim)
+        self.softmax = nn.Softmax(dim=1)
+
+    def forward(self, x):
+        # x shape: (batch_size, seq_len, input_dim)
+        batch_size, seq_len, input_dim = x.size()
+
+        # Compute query, key, and value
+        q = self.query(x)  # (batch_size, seq_len, hidden_dim)
+        k = self.key(x)  # (batch_size, seq_len, hidden_dim)
+        v = self.value(x)  # (batch_size, seq_len, hidden_dim)
+
+        # Compute attention scores
+        scores = torch.bmm(q, k.transpose(1, 2))  # (batch_size, seq_len, seq_len)
+        attention_weights = self.softmax(scores)  # (batch_size, seq_len, seq_len)
+
+        # Apply attention weights to value
+        attended_values = torch.bmm(attention_weights, v)  # (batch_size, seq_len, hidden_dim)
+
+        return attended_values
