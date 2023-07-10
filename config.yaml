@@ -28,7 +28,7 @@ temporal_filter: False
 pow_law_opt: False
 angle_threshold: 75
 etol: 1
-crop_ratio: 0.7
+crop_ratio: 0.8
 
 # paths
 data_path: PALA_data_InSilicoFlow/
