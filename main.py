@@ -79,7 +79,7 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     data_path = script_path / cfg.data_dir
     zip_extract(data_path)
     # load dataset
-    if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=True)]
+    if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=False)]
     dataset = ChirpDataset(
         root_dir = data_path,
         split_dirname = 'test' if cfg.evaluate else 'train',

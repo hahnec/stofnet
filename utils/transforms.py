@@ -2,7 +2,7 @@ from torch import Tensor, rand, randn, clamp
 from torch.nn import Module
 from torchaudio import functional as F
 from torchaudio.transforms import Vol
-from numpy import ndarray, random, linspace
+from numpy import ndarray, random, linspace, pad
 from scipy.interpolate import interp1d
 
 
@@ -46,7 +46,7 @@ class NormalizeVol(Module):
 class CropChannelData(Module):
     def __init__(self,
         ratio: float = None,
-        resize: bool = True,
+        resize: bool = False,
     ):
         super(CropChannelData, self).__init__()
 
@@ -91,12 +91,15 @@ class CropChannelData(Module):
         gt -= start
         assert cropped.size == width
 
-        # resize for consistent waveform length (as required by some models)
+        # resize or pad for consistent waveform length (as required by some models)
         if self.resize:
             rescale_factor = waveform.size / cropped.size
             cropped = self.upscale_1d(cropped, rescale_factor)
             gt *= rescale_factor
+        else:
+            pad_len = waveform.size - cropped.size
+            cropped = pad(cropped, (0, pad_len), mode='constant')
 
-            assert cropped.size == waveform.size
+        assert cropped.size == waveform.size
 
         return cropped, gt, *args, *kwargs
