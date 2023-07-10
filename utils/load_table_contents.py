@@ -1,10 +1,15 @@
 import wandb
 import sys
+from pathlib import Path
+import json
+import numpy as np
+import shutil
 
-runs = wandb.Api().runs("StofNet")
+api = wandb.Api()
+runs = api.runs("StofNet")
 
 # filter group runs
-group_name = sys.argv[1] if len(sys.argv) > 1 else 'array_inference'
+group_name = sys.argv[1] if len(sys.argv) > 1 else 'chirp_array'
 runs = [run for run in runs if run.group == group_name]
 
 # Sort the runs by creation time (most recent first)
@@ -14,8 +19,13 @@ sorted_runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]) if run.s
 num_recent_runs = 5
 recent_runs = sorted_runs[:num_recent_runs]
 
+# artifact handling
+load_artifact_opt = False
+if load_artifact_opt and Path('./artifacts').exists(): shutil.rmtree('./artifacts')
+
 ndigits = 3
 metric_runs = []
+toas, model_names = [], []
 for metric_run in recent_runs:
     model_name = metric_run.summary['model_name'] if 'model_name' in metric_run.summary.keys() else None
     total_dist_mean = metric_run.summary['total_distance_mean']
@@ -29,14 +39,35 @@ for metric_run in recent_runs:
     model_name, total_dist_avg, total_dist_std, total_time, total_params, total_jaccard = [format(round(el, ndigits), fmt) if isinstance(el, (float, int)) else el for el in [model_name, total_dist_mean, total_dist_std, total_time, total_params, total_jaccard]]
     row_list = [str(model_name), str(total_dist_avg)+' $\pm$ '+str(total_dist_std), str(total_jaccard), str(total_params).split('.')[0], str(total_time)]
     metric_runs.append(row_list)
+    
+    # download artifacts
+    for artifact in metric_run.logged_artifacts():
+        if artifact.type == "data":
+            artifact_path = Path('./artifacts') / model_name / artifact.name.split(':')[0]
+            if load_artifact_opt: artifact.download(artifact_path)
+    
+    # load artifacts
+    stack = []
+    for name in ['toa', 'gt']:
+        with open(artifact_path / (name+'.table.json'), 'r') as json_file:
+            json_dict = json.load(json_file)
+            stack.append(np.array(json_dict['data']))
 
+    g=[np.load(f) for f in (artifact_path/'media'/'serialized_data').iterdir() if str(f).endswith('npz')][0]
+    frame = g['Column0'].squeeze()
+
+    toa, gt = stack
+    toas.append(toa)
+    model_names.append(model_name)
+
+# write table
 with open("metrics_table.tex", "w") as f:
     # Write the LaTeX table header
     f.write("\\begin{tabularx}{\linewidth}{ \n \
         >{\\raggedright\\arraybackslash}p{4.9em} %| \n \
         >{\centering\\arraybackslash}p{5.76em} %| \n \
         S[table-format=2.3] %| \n \
-        >{\\raggedleft\\arraybackslash}p{2.8em} %| \n \
+        >{\\raggedleft\\arraybackslash}p{2.9em} %| \n \
         >{\centering\\arraybackslash}p{2em} %| \n \
         }\n")
     f.write("\\toprule\n")
@@ -60,7 +91,6 @@ with open("metrics_table.tex", "w") as f:
     f.write("\\bottomrule\n")
     f.write("\\end{tabularx}")
 
-artifact = None
-if artifact:
-    artifact = metric_run.use_artifact('artifact_name:version', type='artifact_type')
-    artifact_dir = artifact.download()
+# create plot
+from stofnet.utils.plot_frame import stofnet_plot
+stofnet_plot(frame, toa_list=[gt]+toas, toa_labels=['Ground Truth']+model_names)

@@ -16,15 +16,15 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     xs4 = int(toa_list[0])+width//2 if xs4 is None else xs4
 
     colors = ['#0051a2', 'darkgreen', '#ffd44f', '#fd271f', '#93003a', '#808080', '#601090']#
-    lwidths = [.25, 1.75, 1, 1, .75, 1.5]
+    lwidths = [.5, 1.75, 1, 1, .75, 1.5]
 
     # Create main container
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(15, 5))
     plt.subplots_adjust(bottom = 0., left = 0, top = 1., right = 1)
 
     # Create upper axes
     sub1 = fig.add_subplot(1,3,(1,2))
-    (l1,) = sub1.plot(x[xs1:xs2], channel_data[xs1:xs2], linestyle='solid', linewidth=lwidths[0], color=colors[0], label="$y_n(\mathbf{x})$ input signal")
+    (l1,) = sub1.plot(x[xs1:xs2], channel_data[xs1:xs2], linestyle='solid', linewidth=lwidths[0], color='k', label="${y}$ input signal")
     sub1.set_xlim(x[xs1], x[xs2])
     sub1.set_ylim(-max_val, max_val)
     sub1.set_ylabel(r'Amplitude [a.u.]', fontsize=24, labelpad = 15)
@@ -36,7 +36,7 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     sub2 = fig.add_subplot(1,3,3)
     rect_center_x = (x[xs3]+x[xs4])/2
     rect_height = 210
-    sub2.plot(x[xs3:xs4], channel_data[xs3:xs4], linestyle='solid', linewidth=lwidths[0], color=colors[0], label="$y_n(\mathbf{x})$ input signal")
+    sub2.plot(x[xs3:xs4], channel_data[xs3:xs4], linestyle='solid', linewidth=lwidths[0]*2, color='k')
     sub2.set_xlim(x[xs3], x[xs4])
     sub2.set_ylim(-rect_height/2, rect_height/2)
     #sub2.set_ylabel(r'Amplitude [a.u.]', fontsize=24, labelpad = 15)
@@ -44,9 +44,12 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     sub2.tick_params(axis='both', which='minor', labelsize=13)
     sub2.set_xlabel(r'Time $\mathbf{x}$ [sample]', fontsize=24, labelpad = 15)
 
+    # ground truth
+    (l2,) = sub1.plot([toa_list[0].squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed', label=toa_labels[0])
+    sub2.plot([toa_list[0].squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed')
+
     # Time-of-Arrivals
-    toa_colors = ['red']+colors[1:len(toa_labels)-1]
-    for toa, label, c in zip(toa_list, toa_labels, toa_colors):
+    for toa, label, c in zip(toa_list[1:], toa_labels[1:], colors[:len(toa_list)-1]):
         (l2,) = sub1.plot([toa.squeeze(),]*2, [max_val, -max_val], c=c, linestyle='dashed', label=label)
         sub2.plot([toa.squeeze(),]*2, [max_val, -max_val], c=c, linestyle='dashed')
 
@@ -66,7 +69,7 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     sub1.add_artist(rect)
 
     handles, labels = sub1.get_legend_handles_labels()
-    fig.legend([l1, l2], labels=labels, fontsize=21.5, fancybox=True, framealpha=1, ncol=2, bbox_to_anchor=(0.25, 0.5, 0.5, 0.5))
+    fig.legend([l1, l2], labels=labels, fontsize=21.5, fancybox=True, framealpha=1, ncol=2, bbox_to_anchor=(0.001, 0.5, 0.5, 0.5))
 
     # Save figure with nice margin
     plt.tight_layout(rect=(0,0,1,.89))
