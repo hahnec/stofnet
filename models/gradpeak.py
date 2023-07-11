@@ -128,4 +128,4 @@ class GradPeak(torch.nn.Module):
         echoes = self._fun(x.squeeze(1))
         
         # return peaks
-        return echoes[..., 1]
+        return echoes[..., 1] if threshold is not None else echoes[..., 0]
