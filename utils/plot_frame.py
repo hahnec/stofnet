@@ -11,9 +11,12 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     max_val = max(abs(channel_data))
     x = np.arange(len(channel_data)) if x is None else x
 
+    gt = toa_list[0]
+    toa_ref = gt[-1] if len(gt) > 1 else gt
+
     width = 60
-    xs3 = int(toa_list[0])-width//2 if xs3 is None else xs3
-    xs4 = int(toa_list[0])+width//2 if xs4 is None else xs4
+    xs3 = int(toa_ref)-width//2 if xs3 is None else xs3
+    xs4 = int(toa_ref)+width//2 if xs4 is None else xs4
 
     colors = ['#0051a2', 'darkgreen', '#ffd44f', '#fd271f', '#93003a', '#808080', '#601090']
     markers = ['o', 's', '^', 'v', 'D', 'p', '*', 'x', '+', '.']
@@ -26,7 +29,7 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
 
     # Create upper axes
     sub1 = fig.add_subplot(1,3,(1,2))
-    (l1,) = sub1.plot(x[xs1:xs2], channel_data[xs1:xs2], linestyle='solid', linewidth=lwidths[0], color='k', label="${y}$ input signal")
+    (l1,) = sub1.plot(x[xs1:xs2], channel_data[xs1:xs2], linestyle='solid', linewidth=lwidths[0], color='k', label="Waveform signal")
     sub1.set_xlim(x[xs1], x[xs2])
     sub1.set_ylim(-max_val, max_val)
     sub1.set_ylabel(r'Amplitude [a.u.]', fontsize=24, labelpad = 15)
@@ -47,8 +50,10 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     sub2.set_xlabel(r'Time $\mathbf{x}$ [sample]', fontsize=24, labelpad = 15)
 
     # ground truth
-    (l2,) = sub1.plot([toa_list[0].squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed', label=toa_labels[0])
-    sub2.plot([toa_list[0].squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed')
+    #(l2,) = sub1.plot([gt.squeeze(),]*2, [[max_val]*len(gt), [-max_val]*len(gt)], c='red', linestyle='dashed', label=toa_labels[0])
+    #sub2.plot([gt.squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed')
+    sub1.plot(np.array([gt.squeeze(),gt.squeeze()]), np.array([np.ones(len(gt))*max_val, np.ones(len(gt))*-max_val]), c='red', linestyle='dashed', label=toa_labels[0])
+    sub2.plot(np.array([gt.squeeze(),gt.squeeze()]), np.array([np.ones(len(gt))*max_val, np.ones(len(gt))*-max_val]), c='red', linestyle='dashed', label=toa_labels[0])
 
     # Time-of-Arrivals
     for toa, label, c, marker, height in zip(toa_list[1:], toa_labels[1:], colors[:len(toa_list)-1], markers[:len(toa_list)-1], heights):

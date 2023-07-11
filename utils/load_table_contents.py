@@ -20,7 +20,7 @@ num_recent_runs = 6
 recent_runs = sorted_runs[:num_recent_runs]
 
 # artifact handling
-load_artifact_opt = False
+load_artifact_opt = True
 if load_artifact_opt and Path('./artifacts').exists(): shutil.rmtree('./artifacts')
 
 ndigits = 3
@@ -53,10 +53,16 @@ for metric_run in recent_runs:
             json_dict = json.load(json_file)
             stack.append(np.array(json_dict['data']))
 
+    toa, gt = stack
     g=[np.load(f) for f in (artifact_path/'media'/'serialized_data').iterdir() if str(f).endswith('npz')][0]
     frame = g['Column0'].squeeze()
 
-    toa, gt = stack
+    # select channel from frame (PALA-only)
+    if len(frame.shape) > 1:
+        frame = frame[-1, ...]
+        toa = toa.squeeze()[-1]
+        gt = gt.squeeze()[-1]
+
     toas.append(toa)
     model_names.append(model_name)
 
