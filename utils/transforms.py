@@ -58,7 +58,7 @@ class AddNoise(Module):
 
     def forward(self, waveform: (ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
         
-        mean, spread = (.5, 2) if any(waveform < 0) else (0, 1)
+        mean, spread = (.5, 2) if (waveform < 0).any() else (0, 1)
         noise = spread * (random.rand(*waveform.shape) - mean)
         snr_noise = noise * (10**(-self.snr/10) * (sum(waveform**2) / sum(noise**2)))**.5
 
