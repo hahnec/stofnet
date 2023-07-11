@@ -59,9 +59,10 @@ for metric_run in recent_runs:
 
     # select channel from frame (PALA-only)
     if len(frame.shape) > 1:
-        frame = frame[-1, ...]
-        toa = toa.squeeze()[-1]
-        gt = gt.squeeze()[-1]
+        idx = 0
+        frame = frame[idx, ...]
+        toa = toa.squeeze()[idx]
+        gt = gt.squeeze()[idx]
 
     toas.append(toa)
     model_names.append(model_name)
@@ -99,4 +100,4 @@ with open("metrics_table.tex", "w") as f:
 
 # create plot
 from stofnet.utils.plot_frame import stofnet_plot
-stofnet_plot(frame, toa_list=[gt]+toas, toa_labels=['Ground Truth']+model_names)
+stofnet_plot(frame, toa_list=[gt]+toas, toa_labels=['Ground truth']+model_names)
