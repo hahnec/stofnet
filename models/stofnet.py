@@ -32,6 +32,8 @@ class StofNet(nn.Module):
         # init semi-global block
         self.semi_global_block = SemiGlobalBlock(num_features, num_features, 80)
 
+        self.attention = AttentionBlock(1290, 1290)
+
         # init remaining layers
         for i in range(2, 13):
             setattr(self, f'conv{i}', nn.Conv1d(num_features, num_features, 7, 1, padding='same'))
@@ -47,7 +49,7 @@ class StofNet(nn.Module):
         # input signal handling
         x = self.sinc_filter(x) if self.sinc_filter else x
         x = self.hilb_filter(x) if self.hilb_filter is not None else x
-        
+
         # first layer
         x = F.relu(self.conv1(x))
 
@@ -69,7 +71,7 @@ class StofNet(nn.Module):
 
         # last layer and shuffling
         x = self.sample_shuffle(self.conv13(x))
-        
+
         return x
 
     def _initialize_weights(self):
@@ -93,7 +95,7 @@ class SemiGlobalBlock(nn.Module):
         # Contracting path
         self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=5, stride=1, padding=1)
         self.contract_relu = nn.LeakyReLU()
-        #self.attention = AttentionBlock(self.feat_scale*out_channels, self.feat_scale*out_channels)
+        #self.attention = AttentionBlock(2578//2-1, 2578//2-1)
         self.contract_pool = nn.MaxPool1d(kernel_size=sample_scale, stride=sample_scale)
 
         # Expanding path
@@ -142,10 +144,11 @@ class AttentionBlock(nn.Module):
         v = self.value(x)  # (batch_size, seq_len, hidden_dim)
 
         # Compute attention scores
-        scores = torch.bmm(q, k.transpose(1, 2))  # (batch_size, seq_len, seq_len)
-        attention_weights = self.softmax(scores)  # (batch_size, seq_len, seq_len)
+        #scores = torch.bmm(q, k.transpose(1, 2))  # (batch_size, seq_len, seq_len)
+        #attention_weights = self.softmax(scores)  # (batch_size, seq_len, seq_len)
 
         # Apply attention weights to value
-        attended_values = torch.bmm(attention_weights, v)  # (batch_size, seq_len, hidden_dim)
+        #attended_values = torch.bmm(attention_weights, v)  # (batch_size, seq_len, hidden_dim)
+        attended_values = F.scaled_dot_product_attention(q, k, v, dropout_p=0.5)
 
         return attended_values
