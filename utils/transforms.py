@@ -40,7 +40,12 @@ class NormalizeVol(Module):
 
     def forward(self, waveform: (ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
 
-        return waveform/abs(waveform).max(), *args, *kwargs
+        norm = waveform/abs(waveform).max()
+
+        if len(args) == 0 and len(kwargs) == 0:
+            return norm
+        else:
+            return norm, *args, *kwargs
 
 
 class CropChannelData(Module):
