@@ -15,7 +15,9 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     xs3 = int(toa_list[0])-width//2 if xs3 is None else xs3
     xs4 = int(toa_list[0])+width//2 if xs4 is None else xs4
 
-    colors = ['#0051a2', 'darkgreen', '#ffd44f', '#fd271f', '#93003a', '#808080', '#601090']#
+    colors = ['#0051a2', 'darkgreen', '#ffd44f', '#fd271f', '#93003a', '#808080', '#601090']
+    markers = ['o', 's', '^', 'v', 'D', 'p', '*', 'x', '+', '.']
+    heights = [.45, .3, .15, .075, -.075, -.15]
     lwidths = [.5, 1.75, 1, 1, .75, 1.5]
 
     # Create main container
@@ -35,7 +37,7 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     # Create upper axes
     sub2 = fig.add_subplot(1,3,3)
     rect_center_x = (x[xs3]+x[xs4])/2
-    rect_height = 210
+    rect_height = 0.39
     sub2.plot(x[xs3:xs4], channel_data[xs3:xs4], linestyle='solid', linewidth=lwidths[0]*2, color='k')
     sub2.set_xlim(x[xs3], x[xs4])
     sub2.set_ylim(-rect_height/2, rect_height/2)
@@ -49,9 +51,9 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
     sub2.plot([toa_list[0].squeeze(),]*2, [max_val, -max_val], c='red', linestyle='dashed')
 
     # Time-of-Arrivals
-    for toa, label, c in zip(toa_list[1:], toa_labels[1:], colors[:len(toa_list)-1]):
-        (l2,) = sub1.plot([toa.squeeze(),]*2, [max_val, -max_val], c=c, linestyle='dashed', label=label)
-        sub2.plot([toa.squeeze(),]*2, [max_val, -max_val], c=c, linestyle='dashed')
+    for toa, label, c, marker, height in zip(toa_list[1:], toa_labels[1:], colors[:len(toa_list)-1], markers[:len(toa_list)-1], heights):
+        (l2,) = sub1.plot(toa.squeeze(), height, c=c, label=label.capitalize(), linestyle='', marker=marker, markersize=12)
+        sub2.plot(toa.squeeze(), height, c=c, linestyle='', marker=marker, markersize=12)
 
     # Create left side of Connection patch for first axes
     con1 = ConnectionPatch(xyA=(x[xs3], sub2.get_ylim()[1]), coordsA=sub2.transData, 
