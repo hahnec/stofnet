@@ -3,4 +3,4 @@ edsr volcanic-star-706_rf-scale10_epoch_50.pth Null
 sincnet skilled-shadow-707_rf-scale10_epoch_50.pth Null
 kuleshov major-valley-705_rf-scale10_epoch_50.pth Null
 zonzini driven-eon-708_rf-scale10_epoch_50.pth Null
-gradpeak Null 1e-8
+gradpeak Null Null
