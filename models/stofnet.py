@@ -32,7 +32,7 @@ class StofNet(nn.Module):
         # init semi-global block
         self.semi_global_block = SemiGlobalBlock(num_features, num_features, 80)
 
-        self.attention = AttentionBlock(1290, 1290)
+        #self.attention = AttentionBlock(1290, 1290)
 
         # init remaining layers
         for i in range(2, 13):
