@@ -120,6 +120,7 @@ class GradPeak(torch.nn.Module):
     def __init__(self, threshold=None, rescale_factor=1, echo_max=float('inf')):
         super(GradPeak, self).__init__()
 
+        self.threshold = threshold
         self._fun = lambda x: toa_detect(x, threshold=threshold, rescale_factor=rescale_factor, echo_max=echo_max)
 
     def forward(self, x):
@@ -128,4 +129,4 @@ class GradPeak(torch.nn.Module):
         echoes = self._fun(x.squeeze(1))
         
         # return peaks
-        return echoes[..., 1] if threshold is not None else echoes[..., 0]
+        return echoes[..., 1] if self.threshold is not None else echoes[..., 0]
