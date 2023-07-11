@@ -48,6 +48,26 @@ class NormalizeVol(Module):
             return norm, *args, *kwargs
 
 
+class AddNoise(Module):
+    def __init__(self,
+        snr = 40,
+    ):
+        super(AddNoise, self).__init__()
+
+        self.snr = snr
+
+    def forward(self, waveform: (ndarray, Tensor), *args, **kwargs) -> (ndarray, Tensor):
+        
+        mean, spread = (.5, 2) if any(waveform < 0) else (0, 1)
+        noise = spread * (random.rand(*waveform.shape) - mean)
+        snr_noise = noise * (10**(-self.snr/10) * (sum(waveform**2) / sum(noise**2)))**.5
+
+        if len(args) == 0 and len(kwargs) == 0:
+            return waveform + snr_noise
+        else:
+            return waveform + snr_noise, *args, *kwargs
+
+
 class CropChannelData(Module):
     def __init__(self,
         ratio: float = None,

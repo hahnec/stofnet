@@ -27,7 +27,7 @@ from utils.hilbert import hilbert_transform
 from utils.metrics import toa_rmse
 from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
-from utils.transforms import NormalizeVol, CropChannelData
+from utils.transforms import NormalizeVol, CropChannelData, AddNoise
 from utils.collate_fn import collate_fn
 from utils.zip_extract import zip_extract
 
@@ -79,7 +79,7 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     data_path = script_path / cfg.data_dir
     zip_extract(data_path)
     # load dataset
-    if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=False)]
+    if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=False), AddNoise(snr=cfg.snr_db)]
     dataset = ChirpDataset(
         root_dir = data_path,
         split_dirname = 'test' if cfg.evaluate else 'train',

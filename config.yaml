@@ -29,6 +29,7 @@ pow_law_opt: False
 angle_threshold: 75
 etol: 1
 crop_ratio: 0.8
+snr_db: 35
 
 # paths
 data_path: PALA_data_InSilicoFlow/
