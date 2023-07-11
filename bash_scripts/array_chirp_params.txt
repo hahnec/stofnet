@@ -1,5 +1,6 @@
-stofnet misunderstood-silence-511_rf-scale10_epoch_50.pth Null
-sincnet apricot-eon-506_rf-scale10_epoch_50.pth Null
-kuleshov devout-sun-469_rf-scale10_epoch_50.pth Null
-zonzini floral-snowflake-470_rf-scale10_epoch_50.pth Null
+stofnet lucky-flower-704_rf-scale10_epoch_50.pth Null
+edsr volcanic-star-706_rf-scale10_epoch_50.pth Null
+sincnet skilled-shadow-707_rf-scale10_epoch_50.pth Null
+kuleshov major-valley-705_rf-scale10_epoch_50.pth Null
+zonzini driven-eon-708_rf-scale10_epoch_50.pth Null
 gradpeak Null 1e-8
