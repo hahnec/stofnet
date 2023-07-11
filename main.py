@@ -54,6 +54,7 @@ else:
 transforms_list = [NormalizeVol()]
 if cfg.data_dir.lower().__contains__('pala'):
     # load dataset
+    if not cfg.evaluate: transforms_list += [AddNoise(snr=cfg.snr_db)]
     dataset = InSilicoDatasetRf(
         dataset_path = cfg.data_dir,
         sequences = cfg.sequences,
