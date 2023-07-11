@@ -1,6 +1,6 @@
-stofnet solar-dream-509_rf-scale20_epoch_10.pth 2.5
+stofnet tough-shadow-532_rf-scale20_epoch_10.pth 3.5
 edsr lyric-forest-721_rf-scale20_epoch_10.pth 2.5
-sincnet dry-galaxy-525_rf-scale20_epoch_10.pth 5.2
-kuleshov radiant-surf-252_rf-scale20_epoch_10.pth 1
+sincnet dry-galaxy-525_rf-scale20_epoch_10.pth 4
+kuleshov radiant-surf-252_rf-scale20_epoch_10.pth 2
 zonzini summer-wildflower-85_rf-scale20_epoch_10.pth Null
 gradpeak Null 1e-8
