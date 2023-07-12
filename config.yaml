@@ -1,25 +1,31 @@
-# model
-model: 'stofnet'
+# general
 seed: 3008
 logging: 'local_test'
 device: "cpu"
+
+# model
+model: 'stofnet'
+model_file: Null
+hilbert_opt: False
+oscil_opt: True
+
+# training
 batch_size: 4
 lr: 0.001
 epochs: 10
 weight_decay: 1e-8
 upsample_factor: 4
-lambda_value: 1
-kernel_size: 7
-sigma: 1
-mask_amplitude: 50
-th: Null
 evaluate: False
-model_file: Null
-hilbert_opt: False
-oscil_opt: True
-nms_win_size: 7 
 stop_tolerance: 15
 min_delta: 0.01
+
+# loss
+lambda_value: 1
+mask_amplitude: 50
+kernel_size: 7
+sigma: 1
+th: Null
+nms_win_size: 7 
 
 # dataset
 sequences: [1]
