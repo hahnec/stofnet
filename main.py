@@ -30,6 +30,7 @@ from utils.plotting import wb_img_upload, plot_channel_overview
 from utils.transforms import NormalizeVol, CropChannelData, AddNoise
 from utils.collate_fn import collate_fn
 from utils.zip_extract import zip_extract
+from utils.early_stop import EarlyStopping
 
 # load config
 script_path = Path(__file__).parent.resolve()
@@ -172,6 +173,7 @@ if not cfg.model.lower() == 'gradpeak':
 
     optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
+early_stopping = EarlyStopping(tolerance=15, min_delta=0.01)
 
 # loss settings
 loss_mse = nn.MSELoss(reduction='mean')
@@ -393,6 +395,12 @@ for e in range(epochs):
                 pbar.update(cfg.batch_size)
 
     torch.cuda.empty_cache()
+
+    # early stopping
+    early_stopping(train_loss=train_loss, validation_loss=val_loss)
+    if early_stopping.early_stop:
+        print("Finished at epoch:", e)
+        break
 
 if cfg.logging:
 
