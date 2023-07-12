@@ -19,7 +19,7 @@ class StofNet(nn.Module):
 
         # init first and last layer
         self.conv1 = nn.Conv1d(1, self.num_features, self.kernel_sizes[0], 1, 4)
-        self.conv13 = nn.Conv1d(self.num_features, self.upsample_factor, self.kernel_sizes[-1], 1, 1)
+        self.conv_last = nn.Conv1d(self.num_features, self.upsample_factor, self.kernel_sizes[-1], 1, 1)
 
         # init semi-global block
         self.semi_global_block = SemiGlobalBlock(self.num_features, self.num_features, 80)
