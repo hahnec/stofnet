@@ -46,11 +46,6 @@ torch.manual_seed(cfg.seed)
 random.seed(cfg.seed)
 np.random.seed(cfg.seed)
 
-if cfg.device == "cuda":
-    pin_memory = True
-else:
-    pin_memory = False
-
 # load dataset
 transforms_list = [NormalizeVol()]
 if cfg.data_dir.lower().__contains__('pala'):
@@ -107,6 +102,7 @@ train_set, val_set = random_split(dataset, [n_train, n_val], generator=torch.Gen
 
 # create data loaders
 num_workers = min(4, os.cpu_count())
+pin_memory = True if cfg.device == "cuda" else False
 loader_args = dict(batch_size=cfg.batch_size, num_workers=num_workers, pin_memory=pin_memory)
 train_loader = DataLoader(train_set, collate_fn=collate_fn, shuffle=True, **loader_args) if not cfg.evaluate else None
 val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last=True, **loader_args)
