@@ -128,7 +128,7 @@ if cfg.logging:
 
 # load model
 if cfg.model.lower() == 'stofnet':
-    model = StofNet(num_features=64, upsample_factor=cfg.upsample_factor, fs=None, hilbert_opt=cfg.hilbert_opt, concat_oscil=cfg.oscil_opt)
+    model = StofNet(upsample_factor=cfg.upsample_factor)
 elif cfg.model.lower() == 'zonzini':
     model = ZonziniNetSmall() if cfg.data_dir.lower().__contains__('chirp') else ZonziniNetLarge()
 elif cfg.model.lower() == 'kuleshov':

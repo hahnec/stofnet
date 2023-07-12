@@ -3,52 +3,38 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 
-from utils.hilbert import hilbert_transform, HilbertTransform
 from utils.sample_shuffle import SampleShuffle1D
 
 
 class StofNet(nn.Module):
 
-    def __init__(self, num_features=64, upsample_factor=4, fs=None, hilbert_opt=True, concat_oscil=True):
+    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3]):
         super(StofNet, self).__init__()
-    
-        # input signal handling
-        in_channels = 1
-        self.sinc_filter = None
-        self.hilb_filter = None
-        if fs:
-            from models.sincnet import SincConv_fast
-            in_channels = 128
-            kernel_size = 1024
-            self.sinc_filter = SincConv_fast(in_channels, kernel_size=kernel_size+1, sample_rate=fs, in_channels=1, padding=kernel_size//2)
-        elif hilbert_opt:
-            if hilbert_opt and concat_oscil: in_channels = 2
-            self.hilb_filter = HilbertTransform(concat_oscil=concat_oscil)
+
+        # dimensions
+        self.num_blocks = num_blocks
+        self.num_features = num_features
+        self.kernel_sizes = kernel_sizes
+        self.upsample_factor = upsample_factor
 
         # init first and last layer
-        self.conv1 = nn.Conv1d(in_channels, num_features, 9, 1, 4)
-        self.conv13 = nn.Conv1d(num_features, upsample_factor, 3, 1, 1)
+        self.conv1 = nn.Conv1d(1, self.num_features, self.kernel_sizes[0], 1, 4)
+        self.conv13 = nn.Conv1d(self.num_features, self.upsample_factor, self.kernel_sizes[-1], 1, 1)
 
         # init semi-global block
-        self.semi_global_block = SemiGlobalBlock(num_features, num_features, 80)
-
-        #self.attention = AttentionBlock(1290, 1290)
+        self.semi_global_block = SemiGlobalBlock(self.num_features, self.num_features, 80)
 
         # init remaining layers
-        for i in range(2, 13):
-            setattr(self, f'conv{i}', nn.Conv1d(num_features, num_features, 7, 1, padding='same'))
+        for i in range(2, self.num_blocks):
+            setattr(self, f'conv{i}', nn.Conv1d(self.num_features, self.num_features, self.kernel_sizes[1], 1, padding='same'))
 
         # shuffle feature channels to high resolution output
-        self.sample_shuffle = SampleShuffle1D(upsample_factor)
+        self.sample_shuffle = SampleShuffle1D(self.upsample_factor)
 
         # indices of layers where residual connections are added and ReLU is not used
-        self.residual_layers = [3, 5, 7, 9, 11, 12, 13]
+        self.residual_layers = list(range(3, self.num_blocks-1, 2))+[self.num_blocks-1, self.num_blocks]
 
     def forward(self, x):
-        
-        # input signal handling
-        x = self.sinc_filter(x) if self.sinc_filter else x
-        x = self.hilb_filter(x) if self.hilb_filter is not None else x
 
         # first layer
         x = F.relu(self.conv1(x))
@@ -58,7 +44,7 @@ class StofNet(nn.Module):
 
         # iterate through convolutional layers
         res, res1 = x, x
-        for i in range(2, 12):
+        for i in range(2, self.num_blocks-1):
             # get corresponding convolutional layer
             conv = getattr(self, f'conv{i}')
             # pass data to layer considering residual connection
@@ -67,22 +53,22 @@ class StofNet(nn.Module):
             if i in self.residual_layers: res = x
 
         # second last layer
-        x = torch.add(res1, self.conv12(x))
+        conv = getattr(self, f'conv{i+1}')
+        x = torch.add(res1, conv(x))
 
         # last layer and shuffling
-        x = self.sample_shuffle(self.conv13(x))
+        x = self.sample_shuffle(self.conv_last(x))
 
         return x
 
-    def _initialize_weights(self):
+    def _initialize_weights(self, use=False):
 
-        return None
-
-        for i in range(1, 14):
-            if i not in self.residual_layers:
-                init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
-            else:
-                init.orthogonal(getattr(self, f'conv{i}').weight)
+        if use:
+            for i in range(1, self.num_blocks+1):
+                if i not in self.residual_layers:
+                    init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
+                else:
+                    init.orthogonal(getattr(self, f'conv{i}').weight)
 
 
 class SemiGlobalBlock(nn.Module):
@@ -123,32 +109,3 @@ class SemiGlobalBlock(nn.Module):
         x = torch.add(x, x_scale)
         
         return x
-
-
-class AttentionBlock(nn.Module):
-    def __init__(self, input_dim, hidden_dim):
-        super(AttentionBlock, self).__init__()
-
-        self.query = nn.Linear(input_dim, hidden_dim)
-        self.key = nn.Linear(input_dim, hidden_dim)
-        self.value = nn.Linear(input_dim, hidden_dim)
-        self.softmax = nn.Softmax(dim=1)
-
-    def forward(self, x):
-        # x shape: (batch_size, seq_len, input_dim)
-        batch_size, seq_len, input_dim = x.size()
-
-        # Compute query, key, and value
-        q = self.query(x)  # (batch_size, seq_len, hidden_dim)
-        k = self.key(x)  # (batch_size, seq_len, hidden_dim)
-        v = self.value(x)  # (batch_size, seq_len, hidden_dim)
-
-        # Compute attention scores
-        #scores = torch.bmm(q, k.transpose(1, 2))  # (batch_size, seq_len, seq_len)
-        #attention_weights = self.softmax(scores)  # (batch_size, seq_len, seq_len)
-
-        # Apply attention weights to value
-        #attended_values = torch.bmm(attention_weights, v)  # (batch_size, seq_len, hidden_dim)
-        attended_values = F.scaled_dot_product_attention(q, k, v, dropout_p=0.5)
-
-        return attended_values
