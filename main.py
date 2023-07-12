@@ -218,8 +218,7 @@ for e in range(epochs):
                     # loss computation
                     masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                    loss = loss_mse(masks_pred.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 elif cfg.model.lower() == 'zonzini':
                     # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
                     es_sample = masks_pred.clone().detach()
@@ -311,8 +310,7 @@ for e in range(epochs):
                     # loss computation
                     masks_true = coords2mask(gt_true, masks_pred) * cfg.mask_amplitude
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    masks_pred_blur = F.conv1d(masks_pred, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    loss = loss_mse(masks_pred_blur.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
+                    loss = loss_mse(masks_pred.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                     val_loss += loss.item()
                     
                     # estimate ideal threshold
