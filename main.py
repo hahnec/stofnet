@@ -173,7 +173,7 @@ if not cfg.model.lower() == 'gradpeak':
 
     optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
-early_stopping = EarlyStopping(tolerance=15, min_delta=0.01)
+early_stopping = EarlyStopping(tolerance=cfg.stop_tolerance, min_delta=cfg.min_delta)
 
 # loss settings
 loss_mse = nn.MSELoss(reduction='mean')

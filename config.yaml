@@ -15,9 +15,11 @@ mask_amplitude: 50
 th: Null
 evaluate: False
 model_file: Null
-hilbert_opt: True
+hilbert_opt: False
 oscil_opt: True
 nms_win_size: 7 
+stop_tolerance: 15
+min_delta: 0.01
 
 # dataset
 sequences: [1]
