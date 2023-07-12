@@ -12,12 +12,12 @@ oscil_opt: True
 # training
 batch_size: 4
 lr: 0.001
-epochs: 10
+epochs: 80
 weight_decay: 1e-8
 upsample_factor: 4
 evaluate: False
-stop_tolerance: 15
-min_delta: 0.01
+stop_tolerance: 5
+min_delta: 0.005
 
 # loss
 lambda_value: 1
