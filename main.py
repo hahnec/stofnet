@@ -169,7 +169,7 @@ if not cfg.model.lower() == 'gradpeak':
 
     optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
-early_stopping = EarlyStopping(tolerance=cfg.stop_tolerance, min_delta=cfg.min_delta)
+early_stopping = EarlyStopping(patience=cfg.patience, delta=cfg.delta)
 
 # loss settings
 loss_mse = nn.MSELoss(reduction='mean')
@@ -393,7 +393,7 @@ for e in range(epochs):
     torch.cuda.empty_cache()
 
     # early stopping
-    early_stopping(train_loss=train_loss, validation_loss=val_loss)
+    early_stopping(val_loss)
     if early_stopping.early_stop:
         print("Finished at epoch:", e)
         break

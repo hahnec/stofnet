@@ -1,13 +1,11 @@
 # general
 seed: 3008
 logging: 'local_test'
-device: "cpu"
+device: 'cpu'
 
 # model
 model: 'stofnet'
-model_file: Null
-hilbert_opt: False
-oscil_opt: True
+model_file: 'tough-shadow-532_rf-scale20_epoch_10.pth'
 
 # training
 batch_size: 4
@@ -16,8 +14,8 @@ epochs: 80
 weight_decay: 1e-8
 upsample_factor: 4
 evaluate: False
-stop_tolerance: 5
-min_delta: 0.005
+patience: 5
+delta: 1e-3
 
 # loss
 lambda_value: 1
