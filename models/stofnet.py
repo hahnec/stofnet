@@ -8,17 +8,18 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3]):
+    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3], in_channels=1):
         super(StofNet, self).__init__()
 
         # dimensions
         self.num_blocks = num_blocks
+        self.in_channels = in_channels
         self.num_features = num_features
         self.kernel_sizes = kernel_sizes
         self.upsample_factor = upsample_factor
 
         # init first and last layer
-        self.conv1 = nn.Conv1d(1, self.num_features, self.kernel_sizes[0], 1, 4)
+        self.conv1 = nn.Conv1d(self.in_channels, self.num_features, self.kernel_sizes[0], 1, 4)
         self.conv_last = nn.Conv1d(self.num_features, self.upsample_factor, self.kernel_sizes[-1], 1, 1)
 
         # init semi-global block
