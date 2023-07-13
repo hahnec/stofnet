@@ -30,4 +30,4 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 cd ..
 
-python ./stofnet/main.py evaluate=False logging=train data_dir=./datasets/stof_chirp101_dataset th=Null batch_size=4 lr=5e-4 sigma=1 mask_amplitude=2e3 rf_scale_factor=10 hilbert_opt=False
+python ./stofnet/main.py evaluate=False logging=train data_dir=./datasets/stof_chirp101_dataset th=Null rf_scale_factor=10
