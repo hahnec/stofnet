@@ -18,8 +18,8 @@ patience: 5
 delta: 1e-3
 
 # loss
-lambda_value: 1
-mask_amplitude: 50
+lambda_value: 1e-5
+mask_amplitude: 1
 kernel_size: 7
 sigma: 1
 th: Null
@@ -35,7 +35,7 @@ pow_law_opt: False
 angle_threshold: 75
 etol: 1
 crop_ratio: 0.8
-snr_db: 35
+snr_db: 30
 
 # paths
 data_path: PALA_data_InSilicoFlow/
