@@ -1,1 +1,1 @@
-# StofNet - Super-resolution Time of flight Net
+# StofNet - Super-resolution time of flight Network
