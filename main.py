@@ -18,7 +18,7 @@ import sys
 sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
-from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D
+from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D, ESPCN_1D
 from dataloaders.dataset_pala_rf import InSilicoDatasetRf
 from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
@@ -135,6 +135,8 @@ elif cfg.model.lower() == 'kuleshov':
     model = Kuleshov(input_length=sample_num*cfg.rf_scale_factor, output_length=sample_num*cfg.rf_scale_factor*cfg.upsample_factor)
 elif cfg.model.lower() == 'edsr':
     model = EDSR_1D(num_channels=1, num_features=64, num_blocks=8, upscale_factor=cfg.upsample_factor)
+elif cfg.model.lower() == 'espcn':
+    model = ESPCN_1D(upscale_factor=cfg.upsample_factor)
 elif cfg.model.lower() == 'sincnet':
     cfg.upsample_factor = 1
     sincnet_params = {'input_dim': sample_num*cfg.rf_scale_factor,
@@ -212,7 +214,7 @@ for e in range(epochs):
                 masks_pred = model(frame)
 
                 # train loss
-                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr'):
+                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr', 'espcn'):
                     # get estimated samples
                     es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                     # loss computation
@@ -256,7 +258,7 @@ for e in range(epochs):
                     fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
                     wb_img_upload(fig, log_key='train_channels')
                     
-                    if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr'):
+                    if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr', 'espcn'):
                         # image frame plot
                         fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                         axs[0].imshow(masks_pred.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
@@ -305,7 +307,7 @@ for e in range(epochs):
                 toc = time.process_time() - tic
 
                 # validation loss
-                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr'):
+                if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr', 'espcn'):
                     # get estimated samples
                     es_sample = mask2coords(masks_pred, window_size=cfg.nms_win_size, threshold=cfg.th, upsample_factor=cfg.upsample_factor)
                     # loss computation
@@ -379,7 +381,7 @@ for e in range(epochs):
                             frame_artifact.add(table, key)
                         wandb.log_artifact(frame_artifact)
 
-                        if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr'):
+                        if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr', 'espcn'):
                             # image frame plot
                             fig, axs = plt.subplots(1, 2, figsize=(15, 5))
                             axs[0].imshow(masks_pred.flatten(0, 1).detach().cpu().numpy()[:, 256:256+2*masks_pred.flatten(0, 1).shape[0]])
