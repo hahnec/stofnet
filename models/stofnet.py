@@ -8,7 +8,7 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3], in_channels=1):
+    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3], in_channels=1, semi_global_scale=80):
         super(StofNet, self).__init__()
 
         # dimensions
@@ -17,13 +17,14 @@ class StofNet(nn.Module):
         self.num_features = num_features
         self.kernel_sizes = kernel_sizes
         self.upsample_factor = upsample_factor
+        self.semi_global_scale = semi_global_scale
 
         # init first and last layer
         self.conv1 = nn.Conv1d(self.in_channels, self.num_features, self.kernel_sizes[0], 1, 4)
         self.conv_last = nn.Conv1d(self.num_features, self.upsample_factor, self.kernel_sizes[-1], 1, 1)
 
         # init semi-global block
-        self.semi_global_block = SemiGlobalBlock(self.num_features, self.num_features, 80)
+        self.semi_global_block = SemiGlobalBlock(self.num_features, self.num_features, self.semi_global_scale) if self.semi_global_scale != 1 else None
 
         # init remaining layers
         for i in range(2, self.num_blocks):
@@ -35,13 +36,16 @@ class StofNet(nn.Module):
         # indices of layers where residual connections are added and ReLU is not used
         self.residual_layers = list(range(3, self.num_blocks-1, 2))+[self.num_blocks-1, self.num_blocks]
 
+        # initialize weights
+        self._initialize_weights()
+
     def forward(self, x):
 
         # first layer
         x = F.relu(self.conv1(x))
 
         # semi-global block
-        x = self.semi_global_block(x)
+        x = self.semi_global_block(x) if self.semi_global_block is not None else x
 
         # iterate through convolutional layers
         res, res1 = x, x
@@ -62,14 +66,13 @@ class StofNet(nn.Module):
 
         return x
 
-    def _initialize_weights(self, use=False):
+    def _initialize_weights(self):
 
-        if use:
-            for i in range(1, self.num_blocks+1):
-                if i not in self.residual_layers:
-                    init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
-                else:
-                    init.orthogonal(getattr(self, f'conv{i}').weight)
+        for i in range(1, self.num_blocks+1):
+            if i not in self.residual_layers:
+                init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
+            else:
+                init.orthogonal(getattr(self, f'conv{i}').weight)
 
 
 class SemiGlobalBlock(nn.Module):
