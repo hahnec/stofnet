@@ -1,6 +1,6 @@
 stofnet tough-shadow .5
-edsr lyric-forest .5
 kuleshov radiant-surf .5
+edsr lyric-forest .5
 sincnet dry-galaxy .5
 espcn colorful-elevator .5
 zonzini summer-wildflower Null
