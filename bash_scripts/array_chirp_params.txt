@@ -1,7 +1,7 @@
-stofnet lucky-flower Null
-espcn volcanic-star Null
-edsr volcanic-star Null
-sincnet skilled-shadow Null
-kuleshov major-valley Null
-zonzini driven-eon Null
+stofnet wild-sun Null
+espcn colorful-elevator Null
+edsr distinctive-yogurt Null
+sincnet northern-plant Null
+kuleshov ethereal-lion Null
+zonzini smart-resonance Null
 gradpeak Null Null
