@@ -8,7 +8,7 @@ from utils.sample_shuffle import SampleShuffle1D
 
 class StofNet(nn.Module):
 
-    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3], in_channels=1, semi_global_scale=80):
+    def __init__(self, upsample_factor=4, num_features=64, num_blocks=13, kernel_sizes=[9, 7, 3], in_channels=1, semi_global_scale=80, weights_init=False):
         super(StofNet, self).__init__()
 
         # dimensions
@@ -37,7 +37,7 @@ class StofNet(nn.Module):
         self.residual_layers = list(range(3, self.num_blocks-1, 2))+[self.num_blocks-1, self.num_blocks]
 
         # initialize weights
-        self._initialize_weights()
+        if weights_init: self._initialize_weights()
 
     def forward(self, x):
 
