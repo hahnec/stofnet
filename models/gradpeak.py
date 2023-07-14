@@ -117,7 +117,7 @@ def toa_detect(frame, threshold=None, rescale_factor=1, echo_max=float('inf')):
 
 
 class GradPeak(torch.nn.Module):
-    def __init__(self, threshold=None, rescale_factor=1, echo_max=float('inf')):
+    def __init__(self, threshold=None, rescale_factor=1, echo_max=float('inf'), onset_opt=False):
         super(GradPeak, self).__init__()
 
         self.threshold = threshold
@@ -129,4 +129,4 @@ class GradPeak(torch.nn.Module):
         echoes = self._fun(x.squeeze(1))
         
         # return peaks
-        return echoes[..., 1] if self.threshold is not None else echoes[..., 0]
+        return echoes[..., 1] if not onset_opt else echoes[..., 0]

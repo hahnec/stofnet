@@ -156,7 +156,7 @@ elif cfg.model.lower() == 'sincnet':
 elif cfg.model.lower() == 'gradpeak':
     # non-trainable gradient-based detection
     echo_max = 1 if cfg.data_dir.lower().__contains__('chirp') else float('inf')
-    model = GradPeak(threshold=cfg.th, rescale_factor=cfg.rf_scale_factor, echo_max=echo_max)
+    model = GradPeak(threshold=cfg.th, rescale_factor=cfg.rf_scale_factor, echo_max=echo_max, onset_opt=cfg.data_dir.lower().__contains__('chirp'))
     cfg.evaluate = True
 else:
     raise Exception('Model not recognized')
