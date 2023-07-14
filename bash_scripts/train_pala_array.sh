@@ -28,8 +28,9 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 param_store=~/23_culminate/stofnet/bash_scripts/array_chirp_params.txt
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
+threshold=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $3}')
 echo "Model: ${model}"
 
 cd ..
 
-python ./stofnet/main.py evaluate=False logging=train model=${model}
+python ./stofnet/main.py evaluate=False logging=train model=${model} th=${threshold} 
