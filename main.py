@@ -166,7 +166,8 @@ model.eval()
 
 if not cfg.model.lower() == 'gradpeak':
     if cfg.model_file:
-        state_dict = torch.load(str(script_path / 'ckpts' / cfg.model_file), map_location=cfg.device)
+        ckpt_paths = [fn for fn in (script_path / 'ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
+        state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
         model.load_state_dict(state_dict)
 
     optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
@@ -220,7 +221,8 @@ for e in range(epochs):
                     # loss computation
                     masks_true = coords2mask(gt_true, masks_pred)
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    masks_true_blur /= masks_true_blur.max() * cfg.mask_amplitude
+                    masks_true_blur /= masks_true_blur.max() 
+                    masks_true_blur *= cfg.mask_amplitude
                     loss = loss_mse(masks_pred.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 elif cfg.model.lower() == 'zonzini':
                     # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
@@ -313,7 +315,8 @@ for e in range(epochs):
                     # loss computation
                     masks_true = coords2mask(gt_true, masks_pred)
                     masks_true_blur = F.conv1d(masks_true, gauss_kernel_1d, padding=cfg.kernel_size // 2)
-                    masks_true_blur /= masks_true_blur.max() * cfg.mask_amplitude
+                    masks_true_blur /= masks_true_blur.max() 
+                    masks_true_blur *= cfg.mask_amplitude
                     loss = loss_mse(masks_pred.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                     val_loss += loss.item()
                     
