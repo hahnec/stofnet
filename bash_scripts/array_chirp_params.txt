@@ -1,6 +1,7 @@
-stofnet lucky-flower-704_rf-scale10_epoch_50.pth Null
-edsr volcanic-star-706_rf-scale10_epoch_50.pth Null
-sincnet skilled-shadow-707_rf-scale10_epoch_50.pth Null
-kuleshov major-valley-705_rf-scale10_epoch_50.pth Null
-zonzini driven-eon-708_rf-scale10_epoch_50.pth Null
+stofnet lucky-flower Null
+espcn volcanic-star Null
+edsr volcanic-star Null
+sincnet skilled-shadow Null
+kuleshov major-valley Null
+zonzini driven-eon Null
 gradpeak Null Null
