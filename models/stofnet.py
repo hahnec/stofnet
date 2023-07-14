@@ -68,11 +68,13 @@ class StofNet(nn.Module):
 
     def _initialize_weights(self):
 
-        for i in range(1, self.num_blocks+1):
+        for i in range(1, self.num_blocks):
             if i not in self.residual_layers:
                 init.orthogonal(getattr(self, f'conv{i}').weight, init.calculate_gain('relu'))
             else:
                 init.orthogonal(getattr(self, f'conv{i}').weight)
+        
+        init.orthogonal(self.conv_last.weight)
 
 
 class SemiGlobalBlock(nn.Module):
