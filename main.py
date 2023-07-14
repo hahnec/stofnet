@@ -166,7 +166,7 @@ model.eval()
 
 if not cfg.model.lower() == 'gradpeak':
     if cfg.model_file:
-        ckpt_paths = [fn for fn in (script_path / 'ckpts').iterdir() if str(fn).startswith(cfg.model_file.split('_')[0])]
+        ckpt_paths = [fn for fn in (script_path / 'ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
         state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
         model.load_state_dict(state_dict)
 
