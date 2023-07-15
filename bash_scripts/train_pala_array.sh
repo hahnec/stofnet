@@ -11,7 +11,7 @@
 #SBATCH --account=ws_00000
 #SBATCH --partition=gpu-invest
 #SBATCH --gres=gpu:rtx3090:1
-#SBATCH --array=1-6%3
+#SBATCH --array=1-6%6
 
 module load Python/3.8.6-GCCcore-10.2.0
 
@@ -33,4 +33,4 @@ echo "Model: ${model}"
 
 cd ..
 
-python ./stofnet/main.py evaluate=False logging=train model=${model} th=${threshold} 
+python ./stofnet/main.py evaluate=False logging=train model=${model} th=${threshold} lambda_value=1
