@@ -290,7 +290,7 @@ for e in range(epochs):
             with torch.no_grad():
                 
                 # get batch data
-                if cfg.data_dir.lower().__contains__('pala'):
+                if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
                     bmode, gt_points, frame, gt_sample, pts_pala = batch_data
                     frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
                     gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
