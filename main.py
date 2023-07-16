@@ -19,7 +19,7 @@ sys.path.append(str(Path(__file__).parent / "stofnet"))
 sys.path.append(str(Path(__file__).parent.parent))
 
 from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D, ESPCN_1D
-from dataloaders.dataset_pala_rf import InSilicoDatasetRf
+from datasets.pala_dataset_rf import PalaDatasetRf
 from datasets.chirp_dataset import ChirpDataset
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
 from utils.gaussian import gaussian_kernel
@@ -51,7 +51,7 @@ transforms_list = [NormalizeVol()]
 if cfg.data_dir.lower().__contains__('pala'):
     # load dataset
     if not cfg.evaluate: transforms_list += [AddNoise(snr=cfg.snr_db)]
-    dataset = InSilicoDatasetRf(
+    dataset = PalaDatasetRf(
         dataset_path = cfg.data_dir,
         sequences = cfg.sequences,
         rescale_factor = cfg.rf_scale_factor,
