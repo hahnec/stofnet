@@ -1,7 +1,7 @@
-stofnet northern-yogurt .3
-kuleshov skilled-glade .3
-edsr pretty-sun .3
-sincnet twilight-meadow .3
-espcn efficient-deluge .3
+stofnet northern-yogurt .5
+kuleshov skilled-glade .5
+edsr pretty-sun .5
+sincnet twilight-meadow .5
+espcn efficient-deluge .5
 zonzini bumbling-gorge Null
 gradpeak Null 1e-8
