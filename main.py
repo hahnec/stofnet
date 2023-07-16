@@ -257,7 +257,7 @@ for e in range(epochs):
                     masks_true = unravel_batch_dim(masks_true)
 
                     # channel plot
-                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                    fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat') else False)
                     wb_img_upload(fig, log_key='train_channels')
                     
                     if cfg.model.lower() in ('stofnet', 'sincnet', 'kuleshov', 'edsr', 'espcn'):
@@ -375,7 +375,7 @@ for e in range(epochs):
                         masks_pred = unravel_batch_dim(masks_pred)
                         masks_true = unravel_batch_dim(masks_true)
                         # channel plot
-                        fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') else False)
+                        fig = plot_channel_overview(frame[0].cpu().numpy(), gt_sample[0].cpu().numpy(), echoes=es_sample[0].cpu().numpy(), magnify_adjacent=True if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat') else False)
                         wb_img_upload(fig, log_key='val_channels')
                         # channel plot artifact
                         frame_artifact = wandb.Artifact(f'frame_{str(batch_idx).zfill(5)}', type='data', description=cfg.model)
