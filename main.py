@@ -48,7 +48,7 @@ np.random.seed(cfg.seed)
 
 # load dataset
 transforms_list = [NormalizeVol()]
-if cfg.data_dir.lower().__contains__('pala'):
+if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
     # load dataset
     if not cfg.evaluate: transforms_list += [AddNoise(snr=cfg.snr_db)]
     dataset = PalaDatasetRf(
@@ -198,7 +198,7 @@ for e in range(epochs):
             for batch_idx, batch_data in enumerate(train_loader):
 
                 # get batch data
-                if cfg.data_dir.lower().__contains__('pala'):
+                if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
                     bmode, gt_points, frame, gt_sample, pts_pala = batch_data
                     frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
                     gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
