@@ -78,20 +78,20 @@ class StofNet(nn.Module):
 
 
 class SemiGlobalBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, sample_scale=2):
+    def __init__(self, in_channels, out_channels, sample_scale=2, kernel_size=5):
         super(SemiGlobalBlock, self).__init__()
 
         self.sample_scale = sample_scale
         self.feat_scale = max(1, sample_scale//10)
 
         # Contracting path
-        self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=5, stride=1, padding=1)
+        self.contract_conv = nn.Conv1d(in_channels, self.feat_scale*out_channels, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
         self.contract_relu = nn.LeakyReLU()
         #self.attention = AttentionBlock(2578//2-1, 2578//2-1)
         self.contract_pool = nn.MaxPool1d(kernel_size=sample_scale, stride=sample_scale)
 
         # Expanding path
-        self.expand_conv = nn.Conv1d(self.feat_scale*out_channels, out_channels, kernel_size=5, stride=1, padding=1)
+        self.expand_conv = nn.Conv1d(self.feat_scale*out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=kernel_size//2)
         self.expand_relu = nn.LeakyReLU()
         self.expand_upsample = nn.Upsample(scale_factor=sample_scale, mode='nearest')
 
