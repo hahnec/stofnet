@@ -11,7 +11,7 @@
 #SBATCH --account=ws_00000
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
-#SBATCH --array=1-6%1
+#SBATCH --array=1-7%2
 
 module load Python/3.8.6-GCCcore-10.2.0
 
