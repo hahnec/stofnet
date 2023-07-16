@@ -9,18 +9,18 @@ api = wandb.Api()
 runs = api.runs("StofNet")
 
 # filter group runs
-group_name = sys.argv[1] if len(sys.argv) > 1 else 'chirp_array'
+group_name = sys.argv[1] if len(sys.argv) > 1 else 'pala_array'
 runs = [run for run in runs if run.group == group_name]
 
 # Sort the runs by creation time (most recent first)
 sorted_runs = sorted(runs, key=lambda run: int(run.name.split('-')[-1]) if run.state == 'finished' else 0, reverse=True)
 
 # retrieve a specific number of most recent runs
-num_recent_runs = 6
+num_recent_runs = 7
 recent_runs = sorted_runs[:num_recent_runs]
 
 # artifact handling
-load_artifact_opt = True
+load_artifact_opt = False
 if load_artifact_opt and Path('./artifacts').exists(): shutil.rmtree('./artifacts')
 
 ndigits = 3
@@ -41,20 +41,22 @@ for metric_run in recent_runs:
     metric_runs.append(row_list)
     
     # download artifacts
+    artifact_paths = []
     for artifact in metric_run.logged_artifacts():
         if artifact.type == "data":
-            artifact_path = Path('./artifacts') / model_name / artifact.name.split(':')[0]
-            if load_artifact_opt: artifact.download(artifact_path)
+            artifact_paths.append(Path('./artifacts') / model_name / artifact.name.split(':')[0])
+            if load_artifact_opt: artifact.download(artifact_paths[-1])
     
     # load artifacts
+    frame_idx = 2   #1
     stack = []
     for name in ['toa', 'gt']:
-        with open(artifact_path / (name+'.table.json'), 'r') as json_file:
+        with open(artifact_paths[frame_idx] / (name+'.table.json'), 'r') as json_file:
             json_dict = json.load(json_file)
             stack.append(np.array(json_dict['data']))
 
     toa, gt = stack
-    g=[np.load(f) for f in (artifact_path/'media'/'serialized_data').iterdir() if str(f).endswith('npz')][0]
+    g=[np.load(f) for f in (artifact_paths[frame_idx]/'media'/'serialized_data').iterdir() if str(f).endswith('npz')][0]
     frame = g['Column0'].squeeze()
 
     # select channel from frame (PALA-only)
@@ -66,6 +68,17 @@ for metric_run in recent_runs:
 
     toas.append(toa)
     model_names.append(model_name)
+
+# prepare legend label capitalization
+for i, model_name in enumerate(model_names):
+    if model_name in ('edsr', 'espcn'):
+        model_names[i] = model_name.upper()
+    else:
+        model_names[i] = model_name.capitalize()
+        if model_name.__contains__('net'):
+            model_names[i] = model_names[i].replace('net', 'Net')
+        if model_name.__contains__('peak'):
+            model_names[i] = model_names[i].replace('peak', 'Peak')
 
 # write table
 with open("metrics_table.tex", "w") as f:
@@ -85,7 +98,7 @@ with open("metrics_table.tex", "w") as f:
     for k, row_list in enumerate(metric_runs):
         
         # replace model entry
-        row_list[0] = ['Gradient~\cite{Hahne:22}', 'Zonzini~\cite{Zonzini:2022}', 'Kuleshov~\cite{kuleshov2017audio}', 'SincNet~\cite{ravanelli2018speaker}', 'EDSR~\cite{lim2017enhanced}', 'Ours'][k]
+        row_list[0] = ['Gradient~\cite{Hahne:22}', 'Zonzini~\cite{Zonzini:2022}', 'ESPCN~\cite{shi2016real}', 'SincNet~\cite{ravanelli2018speaker}', 'EDSR~\cite{lim2017enhanced}', 'Kuleshov~\cite{kuleshov2017audio}', 'Ours'][k]
 
         # replace None entries
         row_list = [col.replace('None', 'n.a.') for col in row_list]
