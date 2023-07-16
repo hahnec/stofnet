@@ -20,7 +20,7 @@ num_recent_runs = 7
 recent_runs = sorted_runs[:num_recent_runs]
 
 # artifact handling
-load_artifact_opt = False
+load_artifact_opt = True
 if load_artifact_opt and Path('./artifacts').exists(): shutil.rmtree('./artifacts')
 
 ndigits = 3
@@ -112,5 +112,5 @@ with open("metrics_table.tex", "w") as f:
     f.write("\\end{tabularx}")
 
 # create plot
-from stofnet.utils.plot_frame import stofnet_plot
+from utils.plot_frame import stofnet_plot
 stofnet_plot(frame, toa_list=[gt]+toas, toa_labels=['Ground truth']+model_names)
