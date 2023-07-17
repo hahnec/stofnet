@@ -26,8 +26,8 @@ def thresholding(scores, threshold=None):
 def get_maxima_positions(scores, window_size, threshold=None):
 
     suppressed = scores.clone().detach()
-    suppressed = thresholding(suppressed, threshold=threshold)
     suppressed = nms_1d(suppressed, window_size)
+    suppressed = thresholding(suppressed, threshold=threshold)
 
     indices = torch.nonzero(suppressed.squeeze(1), as_tuple=False).long()
 
