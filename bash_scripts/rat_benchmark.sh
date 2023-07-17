@@ -31,6 +31,6 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 echo "Model: ${model}, Model File: ${model_file}"
 
-python ./stofnet/main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True batch_size=1 etol=1 data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=pala_array ch_gap=1 sequenes=[15]
+python ./stofnet/main.py model=${model} model_file=${model_file} th=1 evaluate=True ch_gap=1 batch_size=1 etol=2 logging=rat_array sequenes=[15] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
 
 python ./stofnet/utils/load_table_contents.py pala_array
