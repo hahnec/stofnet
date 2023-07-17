@@ -11,18 +11,23 @@ def nms_1d(scores, window_size):
     return suppressed
 
 
+def thresholding(scores, threshold=None):
+
+    if threshold:
+        scores[scores<threshold] = 0
+    else:
+        # single index for each channel maxima
+        max_vals = torch.max(scores, dim=-1, keepdim=True)[0]
+        scores = scores.masked_fill(scores < max_vals, 0)
+
+    return scores
+
+
 def get_maxima_positions(scores, window_size, threshold=None):
 
     suppressed = scores.clone().detach()
-    
+    suppressed = thresholding(suppressed, threshold=threshold)
     suppressed = nms_1d(suppressed, window_size)
-
-    if threshold:
-        suppressed[suppressed<threshold] = 0
-    else:
-        # single index for each channel maxima
-        max_vals = torch.max(suppressed, dim=-1, keepdim=True)[0]
-        suppressed = suppressed.masked_fill(suppressed < max_vals, 0)
 
     indices = torch.nonzero(suppressed.squeeze(1), as_tuple=False).long()
 

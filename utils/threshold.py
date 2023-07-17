@@ -5,15 +5,18 @@ from sklearn.metrics import roc_curve
 from utils.mask2samples import nms_1d
 
 
-def find_threshold(masks_pred, masks_true, norm_opt=False):
+def find_threshold(masks_pred, masks_true, window_size, norm_opt=False):
+
+    mask_norm = masks_pred.clone().detach()
 
     # normalize prediction
     if norm_opt:
-        masks_norm = masks_pred.detach().clone()
         masks_norm -= masks_norm.min()
         masks_norm /= masks_norm.max()
     else:
         masks_norm = masks_pred
+
+    mask_norm = nms_1d(mask_norm, window_size)
 
     # compute ROC curve results
     fpr, tpr, thresholds = roc_curve(masks_true.float().numpy().flatten(), masks_norm.flatten().float().numpy())
