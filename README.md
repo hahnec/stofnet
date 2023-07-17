@@ -1,7 +1,9 @@
 # StofNet - Super-resolution time of flight Network
 
-<img src="https://github.com/hahnec/stofnet/blob/master/docs/stofnet_arch.svg" width="600" scale="100%">
+<img src="https://github.com/hahnec/stofnet/blob/master/docs/stofnet_arch.svg" width="750" scale="100%">
 
+<br>
+<br>
 
 If you use this project for your work, please cite the original paper:
 
