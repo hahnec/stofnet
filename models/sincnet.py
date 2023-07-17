@@ -31,10 +31,7 @@ def sinc(band, t_right):
     return y
 
 
-def get_pad(size: Union[int, Sequence[int]],
-            kernel_size: Union[int, Sequence[int]] = 3,
-            stride: Union[int, Sequence[int]] = 1,
-            dilation: Union[int, Sequence[int]] = 1):
+def get_pad(size, kernel_size = 3, stride = 1, dilation = 1):
     len_size = 1
     if isinstance(size, collections.Sequence):
         len_size = len(size)
