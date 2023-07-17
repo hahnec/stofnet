@@ -7,7 +7,7 @@ from utils.mask2samples import nms_1d
 
 def find_threshold(masks_pred, masks_true, window_size, norm_opt=False):
 
-    mask_norm = masks_pred.clone().detach()
+    masks_norm = masks_pred.clone().detach()
 
     # normalize prediction
     if norm_opt:
