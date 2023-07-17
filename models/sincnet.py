@@ -33,6 +33,16 @@ def sinc(band, t_right):
 
 
 def get_pad(size, kernel_size = 3, stride = 1, dilation = 1):
+
+    def _get_compressed(item, index):
+        if isinstance(item, collections.Sequence):
+            return item[index]
+        return item
+
+    def _calc_pad(size, kernel_size = 3, stride = 1, dilation = 1):
+        pad = (((size + stride - 1) // stride - 1) * stride + kernel_size - size) * dilation
+        return pad // 2, pad - pad // 2
+
     len_size = 1
     if isinstance(size, collections.Sequence):
         len_size = len(size)
