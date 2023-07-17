@@ -16,7 +16,7 @@ def find_threshold(masks_pred, masks_true, window_size, norm_opt=False):
     else:
         masks_norm = masks_pred
 
-    mask_norm = nms_1d(mask_norm, window_size)
+    masks_norm = nms_1d(masks_norm, window_size)
     
     # true label value
     max_val = float(masks_true.max()) if float(masks_true.max()) != 0 else 1
