@@ -321,7 +321,7 @@ for e in range(epochs):
                     val_loss += loss.item()
                     
                     # estimate ideal threshold
-                    ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu(), window_size=cfg.nms_win_size, norm_opt=True)
+                    ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu(), window_size=cfg.nms_win_size, norm_opt=False)
 
                 elif cfg.model.lower() in ('zonzini', 'gradpeak'):
                     # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detects single echoes)
