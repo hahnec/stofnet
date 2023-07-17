@@ -10,7 +10,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.autograd import Variable
 import math
-from torch_same_pad import get_pad
 
 
 def flip(x, dim):
@@ -30,6 +29,22 @@ def sinc(band, t_right):
     y = torch.cat([y_left, Variable(torch.ones(1)).cuda(), y_right])
 
     return y
+
+
+def get_pad(size: Union[int, Sequence[int]],
+            kernel_size: Union[int, Sequence[int]] = 3,
+            stride: Union[int, Sequence[int]] = 1,
+            dilation: Union[int, Sequence[int]] = 1):
+    len_size = 1
+    if isinstance(size, collections.Sequence):
+        len_size = len(size)
+    pad = ()
+    for i in range(len_size):
+        pad = _calc_pad(size=_get_compressed(size, i),
+                        kernel_size=_get_compressed(kernel_size, i),
+                        stride=_get_compressed(stride, i),
+                        dilation=_get_compressed(dilation, i)) + pad
+    return pad
 
 
 class SincConv_fast(nn.Module):
