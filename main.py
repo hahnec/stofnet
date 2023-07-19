@@ -14,13 +14,11 @@ from pathlib import Path
 import wandb
 import matplotlib.pyplot as plt
 import time
-import sys
-sys.path.append(str(Path(__file__).parent / "stofnet"))
-sys.path.append(str(Path(__file__).parent.parent))
 
 from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D, ESPCN_1D
-from datasets.pala_dataset_rf import PalaDatasetRf
 from datasets.chirp_dataset import ChirpDataset
+from datasets.pala_dataset.pala_rf import PalaDatasetRf
+from datasets.pala_dataset.utils.collate_fn import collate_fn
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
 from utils.gaussian import gaussian_kernel
 from utils.hilbert import hilbert_transform
@@ -28,7 +26,6 @@ from utils.metrics import toa_rmse
 from utils.threshold import find_threshold
 from utils.plotting import wb_img_upload, plot_channel_overview
 from utils.transforms import NormalizeVol, CropChannelData, AddNoise
-from utils.collate_fn import collate_fn
 from utils.zip_extract import zip_extract
 from utils.early_stop import EarlyStopping
 
