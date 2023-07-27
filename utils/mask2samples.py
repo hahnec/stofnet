@@ -9,7 +9,7 @@ def nms_1d(scores, window_size):
     nms_scores[nms_scores!=scores] = 0
     
     return nms_scores
-
+    
 
 def thresholding(scores, threshold=None):
 
