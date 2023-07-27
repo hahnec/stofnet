@@ -5,10 +5,10 @@ from torch.nn import functional as F
 def nms_1d(scores, window_size):
     
     window_size = window_size//2*2+1    # odd integer conversion
-    max_scores = torch.nn.functional.max_pool1d(scores, window_size, stride=1, padding=(window_size - 1) // 2).squeeze(0)
-    suppressed = (scores == max_scores).float() * scores
+    nms_scores = torch.nn.functional.max_pool1d(scores, window_size, stride=1, padding=(window_size - 1) // 2).squeeze(0)
+    nms_scores[nms_scores!=scores] = 0
     
-    return suppressed
+    return nms_scores
 
 
 def thresholding(scores, threshold=None):
