@@ -51,6 +51,7 @@ if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains_
     dataset = PalaDatasetRf(
         dataset_path = cfg.data_dir,
         sequences = cfg.sequences,
+        train = not cfg.evaluate,
         rescale_factor = cfg.rf_scale_factor,
         ch_gap = cfg.ch_gap,
         angle_threshold = cfg.angle_threshold,
