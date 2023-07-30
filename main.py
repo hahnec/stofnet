@@ -81,8 +81,8 @@ elif cfg.data_dir.lower().__contains__('chirp'):
         transforms = torch.nn.Sequential(*transforms_list),
     )
     # data-related config
-    cfg.fs = dataset.cfg.fhz_sample
-    cfg.c = dataset.cfg.speed_of_sound
+    cfg.fs = float(dataset.cfg.fhz_sample)
+    cfg.c = float(dataset.cfg.speed_of_sound)
     # override collate function
     collate_fn = None
 else:
@@ -106,7 +106,8 @@ val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last
 
 # instantiate logging
 if cfg.logging:
-    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg, group=cfg.logging)
+    cfg_dict = OmegaConf.to_container(cfg)
+    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg_dict, group=cfg.logging)
     wb.config.update(dict(epochs=cfg.epochs, batch_size=cfg.batch_size, learning_rate=cfg.lr, val_percent=val_percent))
     wandb.define_metric('train_loss', step_metric='train_step')
     wandb.define_metric('train_points', step_metric='train_step')
