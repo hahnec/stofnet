@@ -18,7 +18,7 @@ import time
 from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D, ESPCN_1D
 from datasets.chirp_dataset import ChirpDataset
 from datasets.pala_dataset.pala_rf import PalaDatasetRf
-from datasets.pala_dataset.utils.collate_fn import collate_fn
+from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
 from utils.gaussian import gaussian_kernel
 from utils.hilbert import hilbert_transform
@@ -197,9 +197,9 @@ for e in range(epochs):
 
                 # get batch data
                 if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
-                    bmode, gt_points, frame, gt_sample, pts_pala = batch_data
-                    frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
+                    frame, _, gt_sample, _, _, _ = batch_data
+                    frame = frame[:, wv_idx].reshape(-1, frame.shape[-1]).unsqueeze(1)
+                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1) if gt_sample.numel() > 0 else gt_sample
                 elif cfg.data_dir.lower().__contains__('chirp'):
                     envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
                     frame = rf_data.float().unsqueeze(1)
@@ -289,9 +289,9 @@ for e in range(epochs):
                 
                 # get batch data
                 if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
-                    bmode, gt_points, frame, gt_sample, pts_pala = batch_data
-                    frame = frame[:, wv_idx].flatten(0, 1).unsqueeze(1)
-                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1)
+                    frame, _, gt_sample, _, _, _ = batch_data
+                    frame = frame[:, wv_idx].reshape(-1, frame.shape[-1]).unsqueeze(1)
+                    gt_sample = gt_sample[:, wv_idx].flatten(0, 1) if gt_sample.numel() > 0 else gt_sample
                 elif cfg.data_dir.lower().__contains__('chirp'):
                     envelope_data, rf_data, rf_gt, gt_sample, gt_position, label = batch_data
                     frame = rf_data.float().unsqueeze(1)
