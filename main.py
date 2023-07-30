@@ -55,7 +55,7 @@ if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains_
         ch_gap = cfg.ch_gap,
         angle_threshold = cfg.angle_threshold,
         clutter_db = cfg.clutter_db,
-        temporal_filter_opt = True if cfg.data_dir.lower().__contains__('rat') else False,
+        temporal_filter_opt = cfg.data_dir.lower().__contains__('rat'),
         pow_law_opt = cfg.pow_law_opt,
         transforms = torch.nn.Sequential(*transforms_list),
         )
