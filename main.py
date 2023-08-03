@@ -51,7 +51,7 @@ if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains_
     dataset = PalaDatasetRf(
         dataset_path = cfg.data_dir,
         sequences = cfg.sequences,
-        train = not cfg.evaluate,
+        train = True,
         rescale_factor = cfg.rf_scale_factor,
         ch_gap = cfg.ch_gap,
         angle_threshold = cfg.angle_threshold,
@@ -107,8 +107,7 @@ val_loader = DataLoader(val_set, collate_fn=collate_fn, shuffle=False, drop_last
 
 # instantiate logging
 if cfg.logging:
-    cfg_dict = OmegaConf.to_container(cfg)
-    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=cfg_dict, group=cfg.logging)
+    wb = wandb.init(project='StofNet', resume='allow', anonymous='must', config=OmegaConf.to_container(cfg), group=cfg.logging)
     wb.config.update(dict(epochs=cfg.epochs, batch_size=cfg.batch_size, learning_rate=cfg.lr, val_percent=val_percent))
     wandb.define_metric('train_loss', step_metric='train_step')
     wandb.define_metric('train_points', step_metric='train_step')
