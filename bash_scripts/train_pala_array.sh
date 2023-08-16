@@ -15,22 +15,22 @@
 
 module load Python/3.8.6-GCCcore-10.2.0
 
-cd ~/23_culminate/stofnet
+cd ~/stofnet
 
 python -m venv venv
 
-source ~/23_culminate/stofnet/venv/bin/activate
+source ~/stofnet/venv/bin/activate
 
 python -m pip install -r requirements.txt
-python3 -m pip install git+https://github.com/CyberZHG/torch-same-pad.git
+python -m pip install -r datasets/pala_dataset/requirements.txt
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-param_store=~/23_culminate/stofnet/bash_scripts/array_pala_params.txt
+param_store=~/stofnet/bash_scripts/array_pala_params.txt
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 threshold=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $3}')
 echo "Model: ${model}"
 
-cd ..
+mkdir -p ckpts
 
-python ./stofnet/main.py evaluate=False logging=train model=${model} th=${threshold} lambda_value=1
+python main.py evaluate=False logging=train model=${model} th=${threshold} lambda_value=1

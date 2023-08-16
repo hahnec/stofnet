@@ -13,21 +13,18 @@
 #SBATCH --gres=gpu:rtx2080ti:1
 
 module load Python/3.8.6-GCCcore-10.2.0
-#module load CUDA/11.3.0-GCC-10.2.0
-#module load cuDNN/8.2.0.53-CUDA-11.3.0
-#module load Workspace
 
-cd ~/23_culminate/stofnet
+cd ~/stofnet
 
 python -m venv venv
 
-source ~/23_culminate/stofnet/venv/bin/activate
+source ~/stofnet/venv/bin/activate
 
 python -m pip install -r requirements.txt
-python3 -m pip install git+https://github.com/CyberZHG/torch-same-pad.git
+python -m pip install -r datasets/pala_dataset/requirements.txt
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-cd ..
+mkdir -p ckpts
 
-python ./stofnet/main.py evaluate=False logging=train
+python main.py evaluate=False logging=train

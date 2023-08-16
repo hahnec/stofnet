@@ -14,25 +14,21 @@
 #SBATCH --array=1-6%1
 
 module load Python/3.8.6-GCCcore-10.2.0
-#module load CUDA/11.3.0-GCC-10.2.0
-#module load cuDNN/8.2.0.53-CUDA-11.3.0
-#module load Workspace
 
-cd ~/23_culminate/stofnet
+cd ~/stofnet
 
 python -m venv venv
 
-source ~/23_culminate/stofnet/venv/bin/activate
+source ~/stofnet/venv/bin/activate
 
 python -m pip install -r requirements.txt
-python3 -m pip install git+https://github.com/CyberZHG/torch-same-pad.git
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-param_store=~/23_culminate/stofnet/bash_scripts/array_chirp_params.txt
+param_store=~/stofnet/bash_scripts/array_chirp_params.txt
 model=$(cat $param_store | awk -v var=$SLURM_ARRAY_TASK_ID 'NR==var {print $1}')
 echo "Model: ${model}"
 
-cd ..
+mkdir -p ckpts
 
-python ./stofnet/main.py evaluate=False logging=train model=${model} data_dir=./datasets/stof_chirp101_dataset th=Null rf_scale_factor=10 
+python main.py evaluate=False logging=train model=${model} data_dir=./datasets/stof_chirp101_dataset th=Null rf_scale_factor=10 

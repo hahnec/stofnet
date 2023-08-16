@@ -14,12 +14,12 @@
 
 module load Python/3.8.6-GCCcore-10.2.0
 
-source ~/23_culminate/stofnet/venv/bin/activate
+source ~/stofnet/venv/bin/activate
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-cd ~/23_culminate/
+cd ~/stofnet/
 
 python -c "import torch; print(torch.cuda.is_available())"
 
-python ./stofnet/main.py evaluate=True batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=chirp_single rf_scale_factor=10
+python main.py evaluate=True batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=chirp_single rf_scale_factor=10
