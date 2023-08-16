@@ -16,9 +16,6 @@ import matplotlib.pyplot as plt
 import time
 
 from models import StofNet, ZonziniNetLarge, ZonziniNetSmall, SincNet, GradPeak, Kuleshov, EDSR_1D, ESPCN_1D
-from datasets.chirp_dataset import ChirpDataset
-from datasets.pala_dataset.pala_rf import PalaDatasetRf
-from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
 from utils.mask2samples import coords2mask, mask2nested_list, mask2coords
 from utils.gaussian import gaussian_kernel
 from utils.hilbert import hilbert_transform
@@ -46,6 +43,8 @@ np.random.seed(cfg.seed)
 # load dataset
 transforms_list = [NormalizeVol()]
 if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains__('rat'):
+    from datasets.pala_dataset.pala_rf import PalaDatasetRf
+    from datasets.pala_dataset.utils.collate_fn_rf import collate_fn
     # load dataset
     if not cfg.evaluate: transforms_list += [AddNoise(snr=cfg.snr_db)]
     dataset = PalaDatasetRf(
@@ -70,6 +69,7 @@ if cfg.data_dir.lower().__contains__('pala') or cfg.data_dir.lower().__contains_
     cfg.wavelength = float(dataset.get_key('wavelength'))
 
 elif cfg.data_dir.lower().__contains__('chirp'):
+    from datasets.chirp_dataset import ChirpDataset
     # extract data folder from zip
     data_path = script_path / cfg.data_dir
     zip_extract(data_path)
@@ -165,8 +165,9 @@ model.eval()
 if not cfg.model.lower() == 'gradpeak':
     if cfg.model_file:
         ckpt_paths = [fn for fn in (script_path / 'ckpts').iterdir() if fn.name.startswith(cfg.model_file.split('_')[0])]
-        state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
-        model.load_state_dict(state_dict)
+        if len(ckpt_paths) > 0:
+            state_dict = torch.load(str(ckpt_paths[0]), map_location=cfg.device)
+            model.load_state_dict(state_dict)
 
     optimizer = optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, cfg.epochs)
