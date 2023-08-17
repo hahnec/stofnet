@@ -5,43 +5,41 @@ device: 'cpu'
 
 # model
 model: 'stofnet'
-model_file: 'tough-shadow-532_rf-scale20_epoch_10.pth'
+model_file: Null
 
 # training
 batch_size: 4
-lr: 0.001
+lr: 5e-4
 epochs: 80
 weight_decay: 1e-8
 upsample_factor: 4
 evaluate: False
 patience: 5
-delta: 1e-3
+delta: 1e-6
 
 # loss
-lambda_value: 1e-5
-mask_amplitude: 1
+lambda_value: 1e-2
+mask_amplitude: 20
 kernel_size: 7
 sigma: 1
-th: Null
+th: 0.5
 nms_win_size: 7 
 
 # dataset
-sequences: [1]
+sequences: [0,1,2,3,4]
 rf_scale_factor: 20
-ch_gap: 16
+ch_gap: 32
 clutter_db: Null
 temporal_filter: False
 pow_law_opt: False
-angle_threshold: 75
+angle_threshold: 60
 etol: 1
-crop_ratio: 0.8
+crop_ratio: 0.6
 snr_db: 30
 
 # paths
-data_path: PALA_data_InSilicoFlow/
+data_path: PALA_data_InSilicoFlow/ #Rat18_2D_InVivoBrain/
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
-loc_dir: ./datasets/stof_chirp101_dataset #/home/chris/LocalDatasets/03_PALA/${data_path} # 
+loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 map_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/${data_path}
-ubx_rat_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-map_rat_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/Rat18_2D_InVivoBrain/
-data_dir: ${loc_dir}
+data_dir: ${ubx_dir}
