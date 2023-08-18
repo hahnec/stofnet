@@ -1,7 +1,7 @@
-stofnet northern-yogurt .5
-kuleshov skilled-glade .5
-edsr pretty-sun .5
-sincnet twilight-meadow .5
-espcn efficient-deluge .5
-zonzini bumbling-gorge Null
+stofnet vibrant-bird .5
+kuleshov rose-deluge .5
+edsr elated-yogurt .5
+sincnet icy-water .5
+espcn lilac-water .5
+zonzini treasured-dawn Null
 gradpeak Null 1e-8

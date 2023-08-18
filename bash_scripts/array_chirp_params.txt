@@ -1,7 +1,7 @@
-stofnet stellar-river Null
-kuleshov fiery-bush Null
-edsr lyric-haze Null
-sincnet honest-monkey Null
-espcn eager-leaf Null
-zonzini silver-plant Null
+stofnet different-armadillo Null
+kuleshov amber-breeze Null
+edsr proud-cherry Null
+sincnet pretty-brook Null
+espcn vital-puddle Null
+zonzini graceful-wave Null
 gradpeak Null Null
