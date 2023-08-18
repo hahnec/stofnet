@@ -66,19 +66,22 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
         used_handles.append(lx)
 
     # Create left side of Connection patch for first axes
+    magnification_color = 'gray'
     con1 = ConnectionPatch(xyA=(x[xs3], sub2.get_ylim()[1]), coordsA=sub2.transData, 
-                        xyB=(x[xs3], rect_height/2), coordsB=sub1.transData, color='k', linewidth=.7)
+                        xyB=(x[xs3], rect_height/2), coordsB=sub1.transData, color=magnification_color, linewidth=.7, linestyle='dotted')
     # Add left side to the figure
     fig.add_artist(con1)
 
     # Create right side of Connection patch for first axes
     con2 = ConnectionPatch(xyA=(x[xs3], sub2.get_ylim()[0]), coordsA=sub2.transData, 
-                        xyB=(x[xs3], -rect_height/2), coordsB=sub1.transData, color='k', linewidth=.7)
+                        xyB=(x[xs3], -rect_height/2), coordsB=sub1.transData, color=magnification_color, linewidth=.7, linestyle='dotted')
     # Add right side to the figure
     fig.add_artist(con2)
 
-    rect = Rectangle((rect_center_x-(x[xs4]-x[xs3])/2, -rect_height/2), width=(x[xs4]-x[xs3]), height=rect_height, fill=False, color='k', linewidth=.7)
+    rect = Rectangle((rect_center_x-(x[xs4]-x[xs3])/2, -rect_height/2), width=(x[xs4]-x[xs3]), height=rect_height, fill=False, color=magnification_color, linewidth=.7)
     sub1.add_artist(rect)
+    for pos in ['top', 'bottom', 'right', 'left']:
+        sub2.spines[pos].set_edgecolor(magnification_color)
 
     handles, labels = sub1.get_legend_handles_labels()
     used_labels = [labels[1]] + toa_labels[-(len(toa_list)-1):]
