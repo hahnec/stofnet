@@ -72,7 +72,7 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     from datasets.chirp_dataset import ChirpDataset
     # extract data folder from zip
     data_path = script_path / cfg.data_dir
-    zip_extract(data_path)
+    if str(data_path).lower().endswith('zip'): zip_extract(data_path)
     # load dataset
     if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=False), AddNoise(snr=cfg.snr_db)]
     dataset = ChirpDataset(
@@ -224,7 +224,7 @@ for e in range(epochs):
                     masks_true_blur *= cfg.mask_amplitude
                     loss = loss_mse(masks_pred.squeeze(1), masks_true_blur.squeeze(1).float()) + loss_l1_arg(masks_pred.squeeze(1)) * cfg.lambda_value
                 elif cfg.model.lower() == 'zonzini':
-                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detect a single echo)
+                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's models detect only a single echo)
                     es_sample = masks_pred.clone().detach()
                     gt_true //= cfg.upsample_factor
                     max_values = torch.gather(abs(hilbert_transform(frame)), -1, gt_true)
@@ -323,7 +323,7 @@ for e in range(epochs):
                     ideal_th = find_threshold(masks_pred.cpu(), masks_true.cpu(), window_size=cfg.nms_win_size, norm_opt=False)
 
                 elif cfg.model.lower() in ('zonzini', 'gradpeak'):
-                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's model detects single echoes)
+                    # get estimated samples: pick first ToA sample or maximum echo (Zonzini's models detect only single echoes)
                     es_sample = masks_pred.clone().detach()
                     # loss computation
                     gt_true //= cfg.upsample_factor
