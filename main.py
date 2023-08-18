@@ -72,7 +72,7 @@ elif cfg.data_dir.lower().__contains__('chirp'):
     from datasets.chirp_dataset import ChirpDataset
     # extract data folder from zip
     data_path = script_path / cfg.data_dir
-    zip_extract(data_path)
+    if str(data_path).lower().endswith('zip'): zip_extract(data_path)
     # load dataset
     if not cfg.evaluate: transforms_list += [CropChannelData(ratio=cfg.crop_ratio, resize=False), AddNoise(snr=cfg.snr_db)]
     dataset = ChirpDataset(
