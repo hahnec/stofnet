@@ -340,11 +340,12 @@ for e in range(epochs):
                 toa_errs = toa_rmse(gt_sample, es_sample, tol=cfg.etol)
 
                 if cfg.logging:
+                    infer_time = toc/cfg.batch_size
                     wb.log({
                         'val_step': val_step,
                         'val_loss': loss.item(),
                         'val_ideal_threshold': ideal_th,
-                        'inference_time': toc/cfg.batch_size,
+                        'inference_time': infer_time,
                     })
 
                     # evaluation metrics
