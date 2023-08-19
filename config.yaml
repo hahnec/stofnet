@@ -1,6 +1,6 @@
 # general
 seed: 3008
-logging: 'local_test'
+logging: False
 device: 'cuda'
 
 # model
@@ -23,7 +23,7 @@ mask_amplitude: 20
 kernel_size: 7
 sigma: 1
 th: 0.5
-nms_win_size: 7 
+nms_win_size: 20
 
 # dataset
 sequences: [0,1,2,3,4]
@@ -32,14 +32,14 @@ ch_gap: 32
 clutter_db: Null
 temporal_filter: False
 pow_law_opt: False
-angle_threshold: 60
+angle_threshold: 45
 etol: 1
 crop_ratio: 0.75
 snr_db: 30
 
 # paths
-data_path: PALA_data_InSilicoFlow/ #Rat18_2D_InVivoBrain/
+data_path: PALA_data_InSilicoFlow/
 ubx_dir: /storage/workspaces/artorg_aimi/ws_00000/chris/${data_path}
 loc_dir: /home/chris/LocalDatasets/03_PALA/${data_path}
 map_dir: /home/chris/UbelixWorkspaces/artorg_aimi/ws_00000/chris/${data_path}
-data_dir: ${ubx_dir}
+data_dir: ./datasets/stof_chirp101_dataset #${ubx_dir}
