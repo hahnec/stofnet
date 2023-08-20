@@ -60,7 +60,10 @@ def stofnet_plot(channel_data, toa_list, toa_labels, xs1=0, xs2=-1, xs3=None, xs
 
     # Time-of-Arrivals
     for toa, label, c, marker, height in zip(toa_list[1:], toa_labels[1:], colors[:len(toa_list)-1], markers[:len(toa_list)-1], heights):
-        toa = toa.squeeze()[toa.squeeze()!=0]
+        if toa is not None:
+            toa = toa.squeeze()[toa.squeeze()!=0]
+        else:
+            continue
         lx = sub1.plot(toa, [height]*len(toa), c=c, label=label, linestyle='', marker=marker, markersize=12)[0]
         sub2.plot(toa, [height]*len(toa), c=c, linestyle='', marker=marker, markersize=12)
         used_handles.append(lx)
