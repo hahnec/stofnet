@@ -1,7 +1,7 @@
-stofnet vibrant-bird .5
-kuleshov rose-deluge .5
-edsr elated-yogurt .5
-sincnet icy-water .5
-espcn lilac-water .5
-zonzini treasured-dawn Null
-gradpeak Null 1e-8
+stofnet graceful-snow 2.3
+kuleshov light-wildflower .65
+edsr snowy-dragon 1.5
+sincnet noble-monkey 4.2
+espcn wobbly-sponge .2
+zonzini polar-sun Null
+gradpeak Null 1e-5

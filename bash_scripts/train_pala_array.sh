@@ -33,4 +33,4 @@ echo "Model: ${model}"
 
 mkdir -p ckpts
 
-python main.py evaluate=False logging=train model=${model} th=${threshold} lambda_value=1
+python main.py evaluate=False logging=train model=${model} th=${threshold} rf_scale_factor=20 lambda_value=1
