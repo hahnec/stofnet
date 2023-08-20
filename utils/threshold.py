@@ -11,12 +11,14 @@ def find_threshold(masks_pred, masks_true, window_size, norm_opt=False):
     if norm_opt:
         masks_norm -= masks_norm.min()
         masks_norm /= masks_norm.max()
+    else:
+        masks_norm[masks_norm<0] = 0
 
     # true label value
     max_val = float(masks_true.max()) if float(masks_true.max()) != 0 else 1
 
     # compute ROC curve results
-    fpr, tpr, thresholds = roc_curve(masks_true.float().cpu().numpy().flatten(), masks_norm.float().cpu().numpy().flatten(), pos_label=max_val)
+    fpr, tpr, thresholds = roc_curve(masks_true[0].float().cpu().numpy().flatten(), masks_norm[0].float().cpu().numpy().flatten(), pos_label=max_val)
 
     # calculate the g-mean for each threshold
     gmeans = (tpr * (1-fpr))**.5
