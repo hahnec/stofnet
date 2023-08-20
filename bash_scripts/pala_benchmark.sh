@@ -31,6 +31,6 @@ python -c "import torch; print(torch.cuda.is_available())"
 
 echo "Model: ${model}, Model File: ${model_file}"
 
-python main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True batch_size=1 etol=1 sequences=[5,6,7,8,9,10,11,12,13,14] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=pala_array
+python main.py model=${model} model_file=${model_file} th=${threshold} evaluate=True batch_size=1 etol=1 rf_scale_factor=20 sequences=[5,6,7,8,9,10,11,12,13,14] data_dir=/storage/workspaces/artorg_aimi/ws_00000/chris/PALA_data_InSilicoFlow/ logging=pala_array
 
 python ./utils/load_table_contents.py pala_array
