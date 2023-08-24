@@ -8,10 +8,12 @@
 If you use this project for your work, please cite the original paper:
 
 ```
-@inproceedings{stofnet,
-    title={StofNet: Super-resolution Time of Flight Network},
-    author={Hahne, Christopher and Hayoz, Michel and Sznitman, Raphael},
-    booktitle={ICASSP 2024 - 2024 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}
-    year={2024},
+@misc{stofnet,
+      title={StofNet: Super-resolution Time of Flight Network}, 
+      author={Christopher Hahne and Michel Hayoz and Raphael Sznitman},
+      year={2023},
+      eprint={2308.12009},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
 }
 ```
