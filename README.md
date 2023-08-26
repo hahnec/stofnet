@@ -5,7 +5,7 @@
 <br>
 <br>
 
-If you use this project for your work, please cite the original paper:
+If you use this project for your work, please cite the original [paper](https://arxiv.org/pdf/2308.12009.pdf):
 
 ```
 @misc{stofnet,
