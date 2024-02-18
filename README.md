@@ -3,8 +3,6 @@
 [![arXiv paper link](https://img.shields.io/badge/paper-arXiv:2308.12009-red)](https://arxiv.org/pdf/2308.12009.pdf)
 
 <img src="https://github.com/hahnec/stofnet/blob/master/docs/stofnet_arch.svg" width="750" scale="100%">
-
-<br>
 <br>
 
 ## Installation
@@ -31,7 +29,6 @@
 ## Results
 
 <img src="https://github.com/hahnec/stofnet/blob/master/docs/chirp_plot.svg" width="750" scale="100%">
-<br>
 <br>
 <img src="https://github.com/hahnec/stofnet/blob/master/docs/pala_plot.svg" width="750" scale="100%">
 <br>
