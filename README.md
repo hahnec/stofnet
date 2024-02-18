@@ -2,7 +2,7 @@
 
 [![arXiv paper link](https://img.shields.io/badge/paper-arXiv:2308.12009-red)](https://arxiv.org/pdf/2308.12009.pdf)
 
-<img src="https://github.com/hahnec/stofnet/blob/master/docs/stofnet_arch.svg" width="750" scale="100%">
+<a href="models/stofnet.py"><img src="https://github.com/hahnec/stofnet/blob/master/docs/stofnet_arch.svg" width="750" scale="100%"></a>
 <br>
 
 ## Installation
