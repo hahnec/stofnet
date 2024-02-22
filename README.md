@@ -22,7 +22,7 @@
 
 ## Inference
 
-`$ python3 main.py evaluate=True batch_size=1 etol=1 data_dir=./datasets/stof_chirp101_dataset logging=chirp_single rf_scale_factor=10`
+`$ python3 main.py evaluate=True batch_size=1 etol=1 model=stofnet model_file=different-armadillo data_dir=./datasets/stof_chirp101_dataset logging=Null rf_scale_factor=10 th=Null`
 
 **Note**: More information on commands and settings are found in [config.yaml](config.yaml) or [bash_scripts](bash_scripts).
 

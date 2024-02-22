@@ -1,7 +1,8 @@
-stofnet graceful-snow 2.3
-kuleshov light-wildflower .65
-edsr snowy-dragon 1.5
-sincnet noble-monkey 4.2
-espcn wobbly-sponge .2
-zonzini polar-sun Null
-gradpeak Null 1e-5
+stofnet graceful-snow .015 20
+stofnet breezy-violet 2.3 20
+edsr snowy-dragon 1.5 20
+sincnet noble-monkey 4.2 20
+espcn wobbly-sponge .2 20
+zonzini polar-sun Null 20
+gradpeak Null 1e-5 20
+#kuleshov light-wildflower .65 20
